@@ -1,0 +1,15 @@
+{
+  "id": "ppt_outline_business",
+  "category": "project",
+  "title": "商务 PPT 大纲",
+  "tags": ["ppt", "汇报", "路演", "大纲"],
+  "applicable_to": ["通用", "商务", "汇报"],
+  "template": "帮我做 PPT 大纲。\n\n主题：{topic}\n场景：{scene}（汇报/路演/培训/总结）\n页数：{page_count}\n受众：{audience}\n\n要求：\n1. 每页：标题 + 3-5 个要点\n2. 逻辑线索（按 {structure}：时间线 / 问题-方案 / 对比 / 故事 / 数字驱动）\n3. 关键页（开场、转折、结尾）给\"金句\"建议\n4. 配色建议：商务风（不花哨、不 AI 感均匀对称）\n5. 排版建议：标题字号、留白、图文比例",
+  "variables": ["topic", "scene", "page_count", "audience", "structure"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

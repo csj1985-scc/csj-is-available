@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-agents">
+  <div class="content-header">
+    <div>
+      <h2>🤖 Agent 状态</h2>
+      <div class="subtitle">查看所有 Agent 的运行状态与调用统计</div>
+    </div>
+    <div class="content-actions">
+      <span class="text-dim" id="agents-count"></span>
+    </div>
+  </div>
+  <div id="agents-loading" class="empty-state"><div class="icon">⏳</div><p>加载 Agent 列表...</p></div>
+  <div id="agents-content" style="display:none"></div>
+  <div id="agents-empty" class="empty-state" style="display:none"><div class="icon">🤖</div><p>暂无 Agent</p></div>
+</div>
+<script>
+async function agentsLoad() {
+  var data = await apiFetch('/admin/api/agents');
+  if (!data) return;
+  document.getElementById('agents-loading').style.display = 'none';
+  var agents = data.agents || [];
+  if (agents.length === 0) {
+    document.getElementById('agents-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('agents-count').textContent = '共 ' + agents.length + ' 个 Agent';
+  var html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th>名称</th><th>来源</th><th>类路径</th><th>类型</th><th>调用次数</th><th>成功率</th><th>最后调用</th><th>操作</th>';
+  html += '</tr></thead><tbody>';
+  agents.forEach(function(a) {
+    var sourceBadge = a.source === 'registry' ? 'badge-purple' : 'badge-gray';
+    var sourceText = a.source === 'registry' ? '会议室' : '场景';
+    var typeBadge = a.type === 'local' ? 'badge-green' : (a.type === 'registry' ? 'badge-purple' : 'badge-orange');
+    var typeText = a.type === 'local' ? '本地' : (a.type === 'registry' ? '注册表' : (a.type === 'external' ? '外部' : a.type));
+    var rateColor = a.success_rate >= 0.9 ? 'text-green' : (a.success_rate >= 0.7 ? 'text-accent' : 'text-red');
+    html += '<tr><td><code>' + (a.name || a.agent_id) + '</code></td>';
+    html += '<td><span class="badge ' + sourceBadge + '">' + sourceText + '</span></td>';
+    html += '<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + (a.class_path || a.agent_id) + '</td>';
+    html += '<td><span class="badge ' + typeBadge + '">' + typeText + '</span></td>';
+    html += '<td class="text-center">' + a.calls_total + '</td>';
+    html += '<td class="text-center"><span class="' + rateColor + '">' + (a.success_rate*100).toFixed(0) + '%</span></td>';
+    html += '<td class="text-dim" style="font-size:12px">' + (a.last_call || '-') + '</td>';
+    html += '<td><div class="btn-group"><a class="btn btn-sm" href="/admin?tab=llm&filter_agent=' + encodeURIComponent(a.agent_id) + '">🔍 查看调用</a></div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('agents-content').innerHTML = html;
+  document.getElementById('agents-content').style.display = 'block';
+  setPageTitle('Agent 状态');
+}
+document.addEventListener('DOMContentLoaded', agentsLoad);
+</script>
+{% endblock %}

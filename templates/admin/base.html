@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K 悟道 · 管理平台</title>
+<style>
+/* ===== Reset & Variables ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f6fa;
+  --bg-card: #ffffff;
+  --border: #e8ecf1;
+  --text: #1a2332;
+  --text-secondary: #6b7a8f;
+  --text-dim: #9aa6b8;
+  --primary: #6c5ce7;
+  --primary-light: #a29bfe;
+  --primary-bg: rgba(108,92,231,0.08);
+  --accent-blue: #54a0ff;
+  --green: #2ed573;
+  --green-bg: rgba(46,213,115,0.1);
+  --orange: #ffa502;
+  --orange-bg: rgba(255,165,2,0.1);
+  --red: #ff4757;
+  --red-bg: rgba(255,71,87,0.1);
+  --purple: #a55eea;
+  --purple-bg: rgba(165,94,234,0.1);
+  --sidebar-width: 220px;
+  --header-height: 60px;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-hover: 0 4px 16px rgba(108,92,231,0.12);
+}
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+}
+/* ===== Sidebar ===== */
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-logo h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #fff;
+}
+.sidebar-logo .sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+.sidebar-nav {
+  flex: 1;
+  padding: 8px 0;
+}
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+  margin: 1px 0;
+}
+.sidebar-nav a:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.06);
+}
+.sidebar-nav a.active {
+  color: #fff;
+  background: linear-gradient(90deg, rgba(108,92,231,0.35) 0%, transparent 100%);
+  border-left-color: var(--primary);
+  font-weight: 600;
+}
+.sidebar-nav .icon { width: 20px; text-align: center; font-size: 16px; }
+.sidebar-footer {
+  padding: 12px 18px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-footer button {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  color: rgba(255,255,255,0.5);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.sidebar-footer button:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+/* ===== Sidebar Collapse ===== */
+.sidebar-collapsed .sidebar {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.sidebar-collapsed .main-wrapper {
+  margin-left: 0;
+}
+.sidebar-collapsed .sidebar-expand-btn {
+  display: flex;
+}
+.sidebar-expand-btn {
+  display: none;
+  position: fixed;
+  left: 8px;
+  top: 70px;
+  z-index: 99;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+}
+.sidebar-expand-btn:hover {
+  color: var(--primary);
+  box-shadow: var(--shadow-hover);
+}
+
+/* ===== Main Area ===== */
+.main-wrapper {
+  margin-left: var(--sidebar-width);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left 0.25s ease;
+}
+.sidebar { transition: width 0.25s ease, min-width 0.25s ease; }
+
+/* ===== Header ===== */
+.header {
+  height: var(--header-height);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow);
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-breadcrumb {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.header-breadcrumb span { color: var(--text); font-weight: 600; }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.header-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.header-stat .num {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 15px;
+}
+.header-stat .num.green { color: var(--green); }
+.header-stat .num.orange { color: var(--orange); }
+.header-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ===== Content Area ===== */
+.content-area {
+  flex: 1;
+  padding: 24px 28px;
+  overflow-y: auto;
+}
+.content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.content-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.content-header .subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.content-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ===== Card Grid ===== */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+/* ===== Card ===== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.card:hover { box-shadow: var(--shadow-hover); }
+.card h3 {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.card .big-num {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.card .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.card-subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ===== Table ===== */
+.table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: #fafbfc;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(108,92,231,0.02); }
+td { vertical-align: middle; }
+
+/* ===== Badge ===== */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-orange { background: var(--orange-bg); color: var(--orange); }
+.badge-blue { background: rgba(84,160,255,0.12); color: #2e86de; }
+.badge-purple { background: var(--purple-bg); color: var(--purple); }
+.badge-gray { background: rgba(106,122,143,0.1); color: var(--text-secondary); }
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(108,92,231,0.1);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff;
+  border: none;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5a4bd1, #8c7ff0);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(108,92,231,0.3);
+}
+.btn-danger {
+  border-color: var(--red);
+  color: var(--red);
+}
+.btn-danger:hover {
+  background: var(--red-bg);
+  color: var(--red);
+  border-color: var(--red);
+}
+.btn-sm { padding: 4px 12px; font-size: 11px; }
+.btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ===== Form Elements ===== */
+select, input[type="text"], input[type="search"] {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+select:focus, input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(108,92,231,0.1); }
+
+/* ===== Filters ===== */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ===== Tabs ===== */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ===== Empty & Loading ===== */
+.empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--text-dim);
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+/* ===== Modal ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 9998;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 600px;
+  width: 92vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.modal-box h3 { font-size: 16px; margin-bottom: 16px; }
+.modal-box label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--text-dim); }
+.modal-box input, .modal-box select, .modal-box textarea { width: 100%; margin-bottom: 12px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+/* ===== Timeline ===== */
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before {
+  content: '';
+  position: absolute; left: 8px; top: 0; bottom: 0;
+  width: 2px; background: var(--border);
+}
+.timeline-item { position: relative; margin-bottom: 18px; }
+.timeline-item::before {
+  content: ''; position: absolute; left: -16px; top: 6px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--border);
+}
+.timeline-item.level-info::before { background: var(--accent-blue); }
+.timeline-item.level-warning::before { background: var(--orange); }
+.timeline-item.level-error::before,
+.timeline-item.level-critical::before { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.timeline-item .time { font-size: 11px; color: var(--text-dim); }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; top: 20px; right: 20px; z-index: 9999;
+  padding: 12px 22px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  background: var(--bg-card);
+  border: 1px solid var(--green);
+  color: var(--green);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+.toast.error { border-color: var(--red); color: var(--red); }
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* ===== Utilities ===== */
+.flex { display: flex; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-center { display: flex; align-items: center; }
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.mb-1 { margin-bottom: 4px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 16px; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 16px; }
+.text-dim { color: var(--text-dim); }
+.text-secondary { color: var(--text-secondary); }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-accent { color: var(--primary); }
+.text-center { text-align: center; }
+code {
+  background: rgba(108,92,231,0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+}
+pre {
+  background: #f8f9fb;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  overflow-x: auto;
+  max-height: 360px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+<!-- ===== Sidebar ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>K 悟道</h1>
+    <div class="sub">Agent 管理平台 · v{{ version }}</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/admin?tab=overview" class="{% if tab == 'overview' %}active{% endif %}" data-tab="overview">
+      <span class="icon">🏠</span> 首页
+    </a>
+    <a href="/admin?tab=chat" class="{% if tab == 'chat' %}active{% endif %}" data-tab="chat">
+      <span class="icon">💬</span> 聊天
+    </a>
+    <a href="/admin?tab=room" class="{% if tab == 'room' %}active{% endif %}" data-tab="room">
+      <span class="icon">🏛</span> 会议室
+    </a>
+    <a href="/admin?tab=task" class="{% if tab == 'task' %}active{% endif %}" data-tab="task">
+      <span class="icon">📋</span> 任务
+    </a>
+    <a href="/admin?tab=scenes" class="{% if tab == 'scenes' %}active{% endif %}" data-tab="scenes">
+      <span class="icon">📦</span> 场景管理
+    </a>
+    <a href="/admin?tab=agents" class="{% if tab == 'agents' %}active{% endif %}" data-tab="agents">
+      <span class="icon">🤖</span> Agent
+    </a>
+    <a href="/admin?tab=llm" class="{% if tab == 'llm' %}active{% endif %}" data-tab="llm">
+      <span class="icon">📊</span> LLM
+    </a>
+    <a href="/admin?tab=cost" class="{% if tab == 'cost' %}active{% endif %}" data-tab="cost">
+      <span class="icon">💰</span> 成本
+    </a>
+    <a href="/admin?tab=sessions" class="{% if tab == 'sessions' %}active{% endif %}" data-tab="sessions">
+      <span class="icon">💬</span> 会话
+    </a>
+    <a href="/admin?tab=alerts" class="{% if tab == 'alerts' %}active{% endif %}" data-tab="alerts">
+      <span class="icon">⚠</span> 异常
+    </a>
+    <a href="/admin?tab=external" class="{% if tab == 'external' %}active{% endif %}" data-tab="external">
+      <span class="icon">🌐</span> 外部
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <button onclick="toggleSidebar()">◀ 收起侧栏</button>
+  </div>
+</aside>
+
+<!-- ===== Main ===== -->
+<button class="sidebar-expand-btn" onclick="expandSidebar()" title="展开侧边栏">☰</button>
+<div class="main-wrapper">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-breadcrumb">
+        K 悟道 / <span id="page-title">{{ tab }}</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-stat">
+        ⏱ <span class="num" id="stat-uptime">{{ uptime }}</span> <span class="text-dim">运行</span>
+      </div>
+      <div class="header-stat">
+        📞 <span class="num green" id="stat-today-calls">-</span> <span class="text-dim">今日</span>
+      </div>
+      <div class="header-stat">
+        💰 <span class="num orange" id="stat-today-cost">-</span> <span class="text-dim">费用</span>
+      </div>
+      <div class="header-avatar">K</div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content-area">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- ===== Shared JS ===== -->
+<script>
+// ---------- Toast ----------
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ---------- API Fetch ----------
+async function apiFetch(url, opts) {
+  try {
+    const r = await fetch(url, opts);
+    if (!r.ok) {
+      showToast('请求失败', true);
+      return null;
+    }
+    const ct = r.headers.get('content-type');
+    if (ct && ct.includes('application/json')) {
+      return await r.json();
+    }
+    return r;
+  } catch(e) {
+    showToast('网络错误: ' + e.message, true);
+    return null;
+  }
+}
+
+// ---------- Tab Title ----------
+function setPageTitle(name) {
+  const el = document.getElementById('page-title');
+  if (el) el.textContent = name;
+}
+
+// ---------- Sidebar Toggle ----------
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-collapsed');
+  // cleanup old inline styles if any
+  const s = document.querySelector('.sidebar');
+  if (s) { s.style.width = ''; s.style.minWidth = ''; s.style.overflow = ''; }
+  const m = document.querySelector('.main-wrapper');
+  if (m) m.style.marginLeft = '';
+}
+function expandSidebar() {
+  document.body.classList.remove('sidebar-collapsed');
+  const s = document.querySelector('.sidebar');
+  if (s) { s.style.width = ''; s.style.minWidth = ''; s.style.overflow = ''; }
+  const m = document.querySelector('.main-wrapper');
+  if (m) m.style.marginLeft = '';
+}
+
+// ---------- Load Header Stats ----------
+async function loadHeaderStats() {
+  const data = await apiFetch('/admin/api/overview');
+  if (!data) return;
+  const callsEl = document.getElementById('stat-today-calls');
+  const costEl = document.getElementById('stat-today-cost');
+  if (callsEl) callsEl.textContent = data.today_calls ?? '-';
+  if (costEl) costEl.textContent = '¥' + (data.today_cost ?? '0');
+}
+
+// Auto load stats on page load
+document.addEventListener('DOMContentLoaded', loadHeaderStats);
+
+// ---------- Global Modal Helpers ----------
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+</script>
+</body>
+</html>

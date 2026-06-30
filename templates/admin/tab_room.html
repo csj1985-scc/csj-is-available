@@ -1,0 +1,337 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-room">
+  <div class="content-header">
+    <div>
+      <h2>🏛 会议室</h2>
+      <div class="subtitle">多 Agent 协作讨论 · 会议历史与管理</div>
+    </div>
+    <div class="content-actions">
+      <button class="btn btn-sm btn-primary" onclick="roomStart()">➕ 开始新会议</button>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="filter-bar">
+      <span class="text-dim">共 <span id="room-count">0</span> 场会议</span>
+    </div>
+  </div>
+
+  <div id="room-loading" class="empty-state"><div class="icon">⏳</div><p>加载会议列表...</p></div>
+  <div id="room-content" style="display:none"></div>
+  <div id="room-empty" class="empty-state" style="display:none"><div class="icon">🏛</div><p>暂无会议记录，点击「开始新会议」发起讨论</p></div>
+</div>
+
+<div id="room-live-log" style="display:none;margin-top:8px">
+  <div class="content-header" style="margin-bottom:8px">
+    <div>
+      <h3 style="font-size:16px">📋 当前讨论</h3>
+    </div>
+  </div>
+  <div id="crLog" class="card mb-2" style="max-height:400px;overflow-y:auto;padding:12px 16px">
+    <div class="text-dim" style="text-align:center;padding:20px;font-size:13px">选择角色后开始讨论</div>
+  </div>
+</div>
+
+<!-- 开始新会议 Modal -->
+<div id="modal-room-start" class="modal-overlay">
+  <div class="modal-box" style="max-width:540px">
+    <h3>🏛 开始新会议</h3>
+    <label>议题</label>
+    <input type="text" id="room-topic" placeholder="例如：讨论 UI 设计方案" style="margin-bottom:12px">
+    <label>讨论要求 <span class="text-dim" style="font-weight:400">（可选）</span></label>
+    <textarea id="room-requirements" style="width:100%;height:80px;font-size:13px;resize:vertical;margin-bottom:12px" placeholder="详细描述议题背景和要求..."></textarea>
+    <label>参与角色 <span class="text-dim" id="room-agent-count" style="font-weight:400"></span>
+      <a href="javascript:void(0)" onclick="roomShowAddAgent()" style="font-size:11px;font-weight:400;color:var(--primary);text-decoration:none;margin-left:8px">+ 自定义</a>
+    </label>
+    <div id="room-agent-list" style="margin-bottom:6px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;">
+      <div class="text-dim" style="text-align:center;padding:8px">加载角色列表...</div>
+    </div>
+    <div id="room-add-agent-form" style="display:none;margin-bottom:12px;padding:10px 12px;border:1px dashed var(--primary);border-radius:var(--radius-sm);background:var(--primary-bg)">
+      <label style="font-size:12px">角色名称</label>
+      <input type="text" id="room-new-agent-name" placeholder="例如：产品经理" style="width:100%;margin-bottom:6px">
+      <label style="font-size:12px">角色描述</label>
+      <textarea id="room-new-agent-desc" style="width:100%;height:50px;font-size:12px;resize:vertical;margin-bottom:6px" placeholder="这个角色的立场和职责..."></textarea>
+      <div class="modal-actions" style="margin-top:0">
+        <button class="btn btn-sm" onclick="roomCancelAddAgent()">取消</button>
+        <button class="btn btn-sm btn-primary" onclick="roomConfirmAddAgent()">添加</button>
+      </div>
+    </div>
+    <label>讨论轮次</label>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <input type="range" id="room-rounds" min="1" max="10" value="3" style="flex:1" oninput="document.getElementById('room-rounds-val').textContent=this.value">
+      <span id="room-rounds-val" style="font-size:14px;font-weight:600;min-width:24px">3</span><span class="text-dim" style="font-size:12px">轮</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-room-start')">取消</button>
+      <button class="btn btn-sm btn-primary" onclick="roomSubmitStart()">开始讨论</button>
+    </div>
+  </div>
+</div>
+
+<!-- 查看会议详情 Modal -->
+<div id="modal-room-detail" class="modal-overlay">
+  <div class="modal-box" style="max-width:760px;max-height:80vh;overflow-y:auto;">
+    <div class="flex-between mb-3">
+      <h3 id="room-detail-title" style="margin-bottom:0"></h3>
+      <button class="btn btn-sm" onclick="closeModal('modal-room-detail')">✕ 关闭</button>
+    </div>
+    <div id="room-detail-body"></div>
+  </div>
+</div>
+
+<script>
+var _roomAgents = [];
+var _roomSessionId = '';
+var _roomRunning = false;
+
+async function roomLoad() {
+  var data = await apiFetch('/consultation/history');
+  if (!data) return;
+  document.getElementById('room-loading').style.display = 'none';
+
+  var sessions = data.sessions || data.consultations || data || [];
+  document.getElementById('room-count').textContent = sessions.length;
+
+  if (sessions.length === 0) {
+    document.getElementById('room-empty').style.display = 'block';
+    return;
+  }
+
+  var html = '<div class="card-grid">';
+  sessions.forEach(function(s) {
+    var sid = s.session_id || s.id || '';
+    var topic = (s.topic || s.title || '未命名会议').replace(/\n【讨论要求】.*/, '');
+    var status = s.status || 'completed';
+    var statusBadge = status === 'completed' ? 'badge-green' : (status === 'running' ? 'badge-blue' : 'badge-orange');
+    var time = s.created_at || s.time || '';
+    var agentNames = (s.agents || []).map(function(a){return a.name || a.agent_name || '';}).filter(Boolean).join(', ');
+    var roundInfo = (s.rounds || []).length + '/' + (s.max_rounds || '?') + ' 轮';
+
+    html += '<div class="card">';
+    html += '<div><div class="flex-between"><h3>' + topic.slice(0,40) + '</h3><span class="badge ' + statusBadge + '">' + (status==='completed'?'已结束':(status==='running'?'进行中':'创建')) + '</span></div>';
+    html += '<div class="text-dim" style="font-size:12px;margin-top:4px">' + time + ' · ' + roundInfo + '</div>';
+    if (agentNames) html += '<div class="text-dim" style="font-size:12px;margin-top:2px">角色: ' + agentNames + '</div>';
+    if (s.conclusion) {
+      var summary = s.conclusion.summary || s.conclusion || '';
+      if (summary.length > 80) summary = summary.slice(0,80) + '...';
+      html += '<div class="text-dim" style="font-size:12px;margin-top:4px">结论: ' + summary + '</div>';
+    }
+    html += '</div>';
+    html += '<div class="btn-group" style="margin-top:12px">';
+    html += '<button class="btn btn-sm" onclick="roomViewDetail(\'' + sid + '\')">📄 查看详情</button>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  document.getElementById('room-content').innerHTML = html;
+  document.getElementById('room-content').style.display = 'block';
+  try{setPageTitle('会议室');}catch(e){}
+}
+
+// ── 加载可用 Agent 列表 ──────────────────────────
+async function roomLoadAgents() {
+  var data = await apiFetch('/consultation/agents');
+  if (!data || !data.agents) return;
+  _roomAgents = data.agents;
+  renderRoomAgents();
+}
+
+function renderRoomAgents() {
+  var container = document.getElementById('room-agent-list');
+  var countEl = document.getElementById('room-agent-count');
+  if (!container) return;
+  if (_roomAgents.length === 0) {
+    container.innerHTML = '<div class="text-dim" style="text-align:center;padding:8px">暂无可用角色</div>';
+    countEl.textContent = '';
+    return;
+  }
+  var html = '';
+  _roomAgents.forEach(function(a) {
+    html += '<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer;border-radius:4px;">';
+    html += '<input type="checkbox" class="room-agent-cb" value="' + a.id + '" checked style="width:16px;height:16px;cursor:pointer">';
+    html += '<span style="font-size:13px">' + escHtml(a.name) + '</span>';
+    html += '<span class="text-dim" style="font-size:11px">' + escHtml(a.description) + '</span>';
+    if (!a.is_predefined) {
+      html += '<a href="javascript:void(0)" onclick="roomDeleteAgent(\'' + a.id + '\')" style="margin-left:auto;color:var(--red);font-size:11px;text-decoration:none" title="删除">✕</a>';
+    }
+    html += '</label>';
+  });
+  container.innerHTML = html;
+  var checked = document.querySelectorAll('.room-agent-cb:checked').length;
+  countEl.textContent = '(已选 ' + checked + '/' + _roomAgents.length + ' 个)';
+}
+
+// ── 自定义 Agent ────────────────────────────────
+function roomShowAddAgent() {
+  document.getElementById('room-add-agent-form').style.display = 'block';
+  document.getElementById('room-new-agent-name').value = '';
+  document.getElementById('room-new-agent-desc').value = '';
+  document.getElementById('room-new-agent-name').focus();
+}
+function roomCancelAddAgent() {
+  document.getElementById('room-add-agent-form').style.display = 'none';
+}
+async function roomConfirmAddAgent() {
+  var name = document.getElementById('room-new-agent-name').value.trim();
+  var desc = document.getElementById('room-new-agent-desc').value.trim();
+  if (!name) { showToast('请输入角色名称', true); return; }
+  var data = await apiFetch('/agents', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name: name, description: desc})
+  });
+  if (data && data.ok !== false) {
+    showToast('✅ 已添加角色: ' + name);
+    document.getElementById('room-add-agent-form').style.display = 'none';
+    roomLoadAgents();
+  } else {
+    showToast((data && data.error) || '添加失败', true);
+  }
+}
+
+async function roomDeleteAgent(agentId) {
+  if (!confirm('确定删除此自定义角色？')) return;
+  var data = await apiFetch('/agents/' + encodeURIComponent(agentId), {method: 'DELETE'});
+  if (data && data.ok !== false) {
+    showToast('已删除');
+    roomLoadAgents();
+  } else {
+    showToast('删除失败', true);
+  }
+}
+
+function roomStart() {
+  if (_roomRunning) { showToast('当前有会议进行中，请等待完成', true); return; }
+  document.getElementById('room-topic').value = '';
+  document.getElementById('room-requirements').value = '';
+  document.getElementById('room-rounds').value = 3;
+  document.getElementById('room-rounds-val').textContent = '3';
+  roomLoadAgents();
+  openModal('modal-room-start');
+}
+
+// ── 开始会议 + 逐轮执行（旧版验证过的流程） ──────
+async function roomSubmitStart() {
+  var topic = document.getElementById('room-topic').value.trim();
+  var requirements = document.getElementById('room-requirements').value.trim();
+  var maxRounds = parseInt(document.getElementById('room-rounds').value) || 3;
+  if (!topic) { showToast('请输入议题', true); return; }
+
+  var cbs = document.querySelectorAll('.room-agent-cb:checked');
+  if (cbs.length < 2) { showToast('请至少选择 2 个 Agent 角色', true); return; }
+  var agentIds = [];
+  cbs.forEach(function(cb) { agentIds.push(cb.value); });
+
+  closeModal('modal-room-start');
+  showToast('创建会议...');
+  _roomRunning = true;
+
+  // 1. 创建会议
+  var data = await apiFetch('/consultation/start', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({topic: topic, requirements: requirements, agent_ids: agentIds, max_rounds: maxRounds})
+  });
+  if (!data || data.ok === false) {
+    showToast((data && data.error) || '启动失败', true);
+    _roomRunning = false;
+    return;
+  }
+
+  _roomSessionId = data.session_id;
+  showToast('✅ 会议已创建，开始讨论');
+
+  // 2. 逐轮执行（旧版验证过的流程）
+  for (var r = 1; r <= maxRounds; r++) {
+    showToast('第 ' + r + '/' + maxRounds + ' 轮讨论中...');
+    var rd = await apiFetch('/consultation/' + _roomSessionId + '/round', {method: 'POST'});
+    if (!rd) { showToast('第 ' + r + ' 轮执行失败', true); break; }
+    // 显示本轮发言
+    (rd.utterances || rd.result?.utterances || []).forEach(function(u) {
+      roomAppendLog(u.agent_name || u.agent_id, (u.content || '').slice(0,300), '第' + r + '轮');
+    });
+    await sleep(500);
+  }
+
+  // 3. 生成结论
+  showToast('生成结论...');
+  var cd = await apiFetch('/consultation/' + _roomSessionId + '/conclude', {method: 'POST'});
+  if (cd) {
+    var conclusionText = cd.conclusion?.summary || cd.summary || JSON.stringify(cd).slice(0,300);
+    roomAppendLog('📋 结论', conclusionText, '');
+    showToast('✅ 会议完成');
+  } else {
+    showToast('结论生成失败', true);
+  }
+
+  _roomRunning = false;
+  roomLoad();
+}
+
+function roomAppendLog(agent, text, round) {
+  var log = document.getElementById('crLog');
+  if (!log) return;
+  // 如果 log 里只显示占位文字，清掉
+  if (log.children.length === 1 && log.children[0].classList.contains('text-dim')) {
+    log.innerHTML = '';
+  }
+  var entry = document.createElement('div');
+  entry.className = 'card mb-2';
+  entry.style.padding = '10px 14px';
+  entry.innerHTML = '<div class="flex-between"><span class="badge badge-purple">' + escHtml(agent) + '</span>' + (round ? '<span class="text-dim" style="font-size:11px">' + round + '</span>' : '') + '</div><div style="font-size:13px;margin-top:6px">' + escHtml(text) + '</div>';
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function sleep(ms) { return new Promise(function(r){setTimeout(r,ms);}); }
+
+// ── 查看会议详情 ────────────────────────────────
+async function roomViewDetail(sessionId) {
+  var data = await apiFetch('/consultation/' + encodeURIComponent(sessionId));
+  if (!data) { showToast('加载会议详情失败', true); return; }
+  var s = data.session || data;
+  var title = (s.topic || s.title || '会议详情').replace(/\n.*/, '');
+  document.getElementById('room-detail-title').textContent = '🏛 ' + title;
+
+  var html = '<div class="card mb-2">';
+  html += '<div class="text-dim" style="font-size:12px">议题</div><p style="font-size:13px">' + escHtml(s.topic || '-') + '</p>';
+  var agentsInfo = (s.agents || []).map(function(a){return a.name || a.id;}).join(', ');
+  if (agentsInfo) html += '<div class="text-dim" style="font-size:12px;margin-top:6px">参与角色: ' + escHtml(agentsInfo) + '</div>';
+  html += '<div class="text-dim" style="font-size:12px;margin-top:6px">轮次: ' + (s.rounds || []).length + '/' + (s.max_rounds || '?') + '</div>';
+  html += '</div>';
+
+  if (s.conclusion) {
+    var summary = s.conclusion.summary || s.conclusion || '';
+    html += '<div class="card mb-2"><div class="text-dim" style="font-size:12px">结论摘要</div><p style="font-size:13px">' + escHtml(summary) + '</p></div>';
+  }
+
+  var rounds = s.rounds || [];
+  if (rounds.length > 0) {
+    rounds.forEach(function(r, ri) {
+      var utterances = r.utterances || [];
+      html += '<h3 class="mb-2">第 ' + (ri + 1) + ' 轮</h3>';
+      utterances.forEach(function(u) {
+        var name = u.agent_name || u.agent_id || 'Agent';
+        var content = u.content || '(空)';
+        html += '<div class="card mb-2">';
+        html += '<div class="flex-between"><span class="badge badge-purple">' + escHtml(name) + '</span></div>';
+        html += '<div style="font-size:13px;margin-top:6px">' + escHtml(content) + '</div></div>';
+      });
+    });
+  } else {
+    html += '<div class="text-dim text-center" style="padding:20px">暂无讨论记录</div>';
+  }
+  document.getElementById('room-detail-body').innerHTML = html;
+  openModal('modal-room-detail');
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', function() { roomLoad(); try{setPageTitle('会议室');}catch(e){} });
+</script>
+{% endblock %}

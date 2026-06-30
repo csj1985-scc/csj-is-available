@@ -1,0 +1,111 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-llm">
+  <div class="content-header">
+    <div>
+      <h2>📊 LLM 流水</h2>
+      <div class="subtitle">查看所有 LLM 调用记录</div>
+    </div>
+    <div class="content-actions">
+      <button class="btn btn-sm btn-primary" onclick="llmExportCSV()">📥 导出 CSV</button>
+    </div>
+  </div>
+  <div class="filter-bar" id="llm-filters">
+    <select id="llm-filter-scene" onchange="llmApplyFilter()">
+      <option value="">全部场景</option>
+    </select>
+    <select id="llm-filter-model" onchange="llmApplyFilter()">
+      <option value="">全部模型</option>
+    </select>
+    <select id="llm-filter-days" onchange="llmApplyFilter()">
+      <option value="1">今天</option>
+      <option value="3">近3天</option>
+      <option value="7" selected>近7天</option>
+      <option value="30">本月</option>
+      <option value="0">全部</option>
+    </select>
+    <span class="text-dim" id="llm-count"></span>
+  </div>
+  <div id="llm-loading" class="empty-state"><div class="icon">⏳</div><p>加载日志...</p></div>
+  <div id="llm-content" style="display:none"></div>
+  <div id="llm-empty" class="empty-state" style="display:none"><div class="icon">📊</div><p>暂无 LLM 调用记录</p></div>
+</div>
+<script>
+async function llmLoad() {
+  var data = await apiFetch('/admin/api/llm');
+  if (!data) return;
+  document.getElementById('llm-loading').style.display = 'none';
+  var logs = data.logs || [];
+  var scenes = data.scenes || [];
+  var models = data.models || [];
+
+  // Populate filters
+  var selScene = document.getElementById('llm-filter-scene');
+  scenes.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    selScene.appendChild(opt);
+  });
+  var selModel = document.getElementById('llm-filter-model');
+  models.forEach(function(m) {
+    var opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    selModel.appendChild(opt);
+  });
+
+  llmRender(logs);
+}
+
+function llmRender(logs) {
+  document.getElementById('llm-count').textContent = '共 ' + logs.length + ' 条';
+  if (logs.length === 0) {
+    document.getElementById('llm-content').style.display = 'none';
+    document.getElementById('llm-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('llm-empty').style.display = 'none';
+  var html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th>时间</th><th>场景</th><th>Agent</th><th>模型</th><th>Token</th><th>费用 (¥)</th><th>状态</th>';
+  html += '</tr></thead><tbody>';
+  logs.forEach(function(l) {
+    var statusMap = {'success':'成功','error':'失败','fallback':'降级','running':'进行中'};
+    var statusBadge = l.status === 'success' ? 'badge-green' : (l.status === 'error' ? 'badge-red' : (l.status === 'fallback' ? 'badge-orange' : 'badge-blue'));
+    var statusText = statusMap[l.status] || l.status;
+    html += '<tr><td class="text-dim" style="font-size:12px;white-space:nowrap">' + l.time + '</td>';
+    html += '<td><code>' + l.scene_id + '</code></td>';
+    html += '<td style="font-size:12px">' + l.agent_id + '</td>';
+    html += '<td><span class="badge badge-purple">' + l.model_type + '</span></td>';
+    html += '<td class="text-center">' + l.tokens + '</td>';
+    html += '<td class="text-center text-dim">' + l.cost.toFixed(6) + '</td>';
+    html += '<td><span class="badge ' + statusBadge + '">' + statusText + '</span></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('llm-content').innerHTML = html;
+  document.getElementById('llm-content').style.display = 'block';
+  setPageTitle('LLM 流水');
+}
+
+async function llmApplyFilter() {
+  var scene = document.getElementById('llm-filter-scene').value;
+  var model = document.getElementById('llm-filter-model').value;
+  var days = document.getElementById('llm-filter-days').value;
+  var params = '?days=' + days;
+  if (scene) params += '&scene=' + encodeURIComponent(scene);
+  if (model) params += '&model=' + encodeURIComponent(model);
+  var data = await apiFetch('/admin/api/llm' + params);
+  if (data) llmRender(data.logs || []);
+}
+
+function llmExportCSV() {
+  var scene = document.getElementById('llm-filter-scene').value;
+  var model = document.getElementById('llm-filter-model').value;
+  var days = document.getElementById('llm-filter-days').value;
+  var params = '?days=' + days;
+  if (scene) params += '&scene=' + encodeURIComponent(scene);
+  if (model) params += '&model=' + encodeURIComponent(model);
+  window.open('/admin/api/llm/export-csv' + params, '_blank');
+}
+
+document.addEventListener('DOMContentLoaded', llmLoad);
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{
+  "id": "write_code_python_fastapi",
+  "category": "coding",
+  "title": "写一个 Python FastAPI 接口",
+  "tags": ["python", "fastapi", "web", "backend", "代码生成"],
+  "applicable_to": ["Python", "FastAPI", "REST API"],
+  "template": "请用 {language} 帮我写 {feature}。\n\n技术栈：{tech_stack}\n质量要求：{quality}\n\n要求：\n1. 代码完整可运行，不要伪代码\n2. 关键逻辑加注释（用户记性不好）\n3. 列出依赖文件（requirements.txt 等）\n4. 给出 1-2 个使用示例（curl / Python 调用）\n5. 错误处理要全（参数校验、异常捕获、HTTP 状态码）\n\n输出格式：先给完整代码块，再给简短说明。",
+  "variables": ["language", "feature", "tech_stack", "quality"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

@@ -1,0 +1,67 @@
+{
+  "version": "0.3.0",
+  "updated_at": "2026-06-30 23:00:23",
+  "total": 23,
+  "by_category": {
+    "misc": [
+      "agent_designer",
+      "agent_engineer",
+      "agent_marketing",
+      "agent_risk"
+    ],
+    "coding": [
+      "api_call_rest",
+      "code_review_general",
+      "debug_python",
+      "refactor_python",
+      "wechat_miniapp_page",
+      "write_code_python_fastapi",
+      "write_doc_readme",
+      "write_sql_general",
+      "write_test_python"
+    ],
+    "creative": [
+      "short_video_douyin"
+    ],
+    "meta": [
+      "learn_skill_meta"
+    ],
+    "preference": [
+      "distill_1782658827_0",
+      "distill_1782658856_0",
+      "distill_1782745249_0",
+      "distill_1782831623_0"
+    ],
+    "project": [
+      "deploy_web",
+      "design_ui_app",
+      "ppt_outline_business",
+      "scaffold_project"
+    ]
+  },
+  "by_id": {
+    "agent_designer": "",
+    "agent_engineer": "",
+    "agent_marketing": "",
+    "agent_risk": "",
+    "api_call_rest": "调 REST API",
+    "code_review_general": "Code Review 代码审查",
+    "debug_python": "Debug 一段报错的代码",
+    "refactor_python": "重构代码",
+    "wechat_miniapp_page": "写微信小程序页面",
+    "write_code_python_fastapi": "写一个 Python FastAPI 接口",
+    "write_doc_readme": "写 README / 项目文档",
+    "write_sql_general": "写 SQL 查询",
+    "write_test_python": "写 Python 测试用例",
+    "short_video_douyin": "抖音短视频脚本",
+    "learn_skill_meta": "从对话中学新提示词",
+    "distill_1782658827_0": "【多Agent协商】【悟道当前状态】\n版本: 0.7.2-d",
+    "distill_1782658856_0": "【多Agent协商】【悟道当前状态】\n版本: 0.7.2-d",
+    "distill_1782745249_0": "【多Agent协商】【悟道当前状态】\n版本: 0.7.2-d",
+    "deploy_web": "部署 Web 项目",
+    "design_ui_app": "界面设计",
+    "ppt_outline_business": "商务 PPT 大纲",
+    "scaffold_project": "搭项目脚手架",
+    "distill_1782831623_0": "【多Agent协商】【悟道当前状态】\n版本: 0.7.2-d"
+  }
+}

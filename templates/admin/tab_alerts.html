@@ -1,0 +1,68 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-alerts">
+  <div class="content-header">
+    <div>
+      <h2>⚠ 异常报警</h2>
+      <div class="subtitle">系统运行异常与告警记录</div>
+    </div>
+    <div class="content-actions">
+      <span class="text-dim" id="alerts-count"></span>
+      <button class="btn btn-sm btn-primary" onclick="alertsTestWebhook()">📤 测试飞书 Webhook</button>
+    </div>
+  </div>
+  <div id="webhook-msg" class="text-dim mb-2" style="font-size:12px"></div>
+  <div id="alerts-loading" class="empty-state"><div class="icon">⏳</div><p>加载告警列表...</p></div>
+  <div id="alerts-content" style="display:none"></div>
+  <div id="alerts-empty" class="empty-state" style="display:none"><div class="icon">✅</div><p>暂无报警记录</p></div>
+</div>
+<script>
+async function alertsLoad() {
+  var data = await apiFetch('/admin/api/alerts');
+  if (!data) return;
+  document.getElementById('alerts-loading').style.display = 'none';
+  var alerts = data.alerts || [];
+
+  document.getElementById('alerts-count').textContent = '共 ' + alerts.length + ' 条记录';
+
+  if (!data.webhook_configured) {
+    document.getElementById('webhook-msg').textContent = '💡 FEISHU_WEBHOOK 未配置，推送功能不可用';
+  }
+
+  if (alerts.length === 0) {
+    document.getElementById('alerts-empty').style.display = 'block';
+    return;
+  }
+
+  var html = '<div class="card" style="padding:20px"><div class="timeline">';
+  alerts.forEach(function(a) {
+    var levelBadge = 'badge-blue';
+    if (a.level === 'warning') levelBadge = 'badge-orange';
+    else if (a.level === 'error' || a.level === 'critical') levelBadge = 'badge-red';
+    html += '<div class="timeline-item level-' + a.level + '">';
+    html += '<div class="flex-between"><strong>' + a.title + '</strong>';
+    html += '<span class="badge ' + levelBadge + '">' + a.level + '</span></div>';
+    html += '<div class="time">' + a.time + '</div>';
+    if (a.detail) html += '<div class="text-dim" style="font-size:12px;margin-top:4px">' + a.detail + '</div>';
+    html += '<div style="margin-top:6px"><a class="btn btn-sm" href="/admin?tab=llm&time_around=' + encodeURIComponent(a.time) + '">📋 查看日志</a></div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+  document.getElementById('alerts-content').innerHTML = html;
+  document.getElementById('alerts-content').style.display = 'block';
+  setPageTitle('异常报警');
+}
+
+async function alertsTestWebhook() {
+  var el = document.getElementById('webhook-msg');
+  el.textContent = '⏳ 正在发送测试推送...';
+  var r = await apiFetch('/admin/api/alerts/test-webhook', {method:'POST'});
+  if (r) {
+    if (r.ok) { showToast('测试推送已发送'); el.textContent = '✅ 测试推送已发送'; }
+    else { showToast(r.msg||'推送失败', true); el.textContent = '❌ ' + (r.msg||'推送失败'); }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', alertsLoad);
+</script>
+{% endblock %}

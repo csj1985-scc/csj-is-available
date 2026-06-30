@@ -1,0 +1,229 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-scenes">
+  <div class="content-header">
+    <div>
+      <h2>📦 场景管理</h2>
+      <div class="subtitle">管理所有对话场景及其 Agent 配置</div>
+    </div>
+    <div class="content-actions">
+      <button class="btn btn-primary btn-sm" onclick="scenesCreate()">➕ 创建场景</button>
+      <button class="btn btn-sm" onclick="scenesClearCache()">🔄 清空缓存</button>
+    </div>
+  </div>
+  <div id="scenes-loading" class="empty-state"><div class="icon">⏳</div><p>加载场景列表...</p></div>
+  <div id="scenes-content" style="display:none"></div>
+  <div id="scenes-empty" class="empty-state" style="display:none"><div class="icon">📦</div><p>暂无场景，点击上方「创建场景」开始</p></div>
+</div>
+<script>
+var scenesYamls = {};
+
+async function scenesLoad() {
+  var data = await apiFetch('/admin/api/scenes');
+  if (!data) return;
+  document.getElementById('scenes-loading').style.display = 'none';
+  if (!data.scenes || data.scenes.length === 0) {
+    document.getElementById('scenes-empty').style.display = 'block';
+    return;
+  }
+  scenesYamls = data.yamls || {};
+  var html = '<div class="card-grid">';
+  data.scenes.forEach(function(s) {
+    var statusClass = s.enabled ? 'badge-green' : 'badge-red';
+    var statusText = s.enabled ? '启用' : '禁用';
+    var btnText = s.enabled ? '禁用' : '启用';
+    var btnClass = s.enabled ? 'btn-danger' : 'btn-primary';
+    html += '<div class="card" style="display:flex;flex-direction:column;justify-content:space-between">';
+    html += '<div><div class="flex-between"><h3 style="margin-bottom:2px">' + s.name + '</h3><span class="badge ' + statusClass + '">' + statusText + '</span></div>';
+    html += '<div><code>' + s.scene_id + '</code></div>';
+    html += '<div class="card-subtitle">模式: <span class="badge badge-blue">' + s.mode + '</span> · Agent: ' + s.agent_count + '</div>';
+    html += '<div class="text-dim" style="font-size:12px;margin-top:4px">最后调用: ' + (s.last_call || '-') + '</div></div>';
+    html += '<div class="btn-group" style="margin-top:12px">';
+    html += '<button class="btn btn-sm ' + btnClass + '" onclick="scenesToggle(\'' + s.scene_id + '\')">' + btnText + '</button>';
+    html += '<button class="btn btn-sm" onclick="scenesEditYaml(\'' + s.scene_id + '\')">✏️ YAML</button>';
+    html += '<button class="btn btn-sm" onclick="scenesEditAgents(\'' + s.scene_id + '\')">🤖 Agent</button>';
+    html += '<button class="btn btn-sm btn-danger" onclick="scenesDelete(\'' + s.scene_id + '\')">🗑 删除</button>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  document.getElementById('scenes-content').innerHTML = html;
+  document.getElementById('scenes-content').style.display = 'block';
+  setPageTitle('场景管理');
+}
+
+async function scenesToggle(sceneId) {
+  var r = await apiFetch('/admin/api/scenes/' + sceneId + '/toggle', {method:'POST'});
+  if (r && r.ok !== false) { showToast('已' + (r.enabled?'启用':'禁用') + ' ' + sceneId); scenesLoad(); }
+  else if (r) showToast(r.error||'操作失败', true);
+}
+async function scenesClearCache() {
+  var r = await apiFetch('/admin/api/scenes/clear-cache', {method:'POST'});
+  if (r && r.ok !== false) { showToast('缓存已清空'); scenesLoad(); }
+}
+async function scenesDelete(sceneId) {
+  if (!confirm('确定删除场景 ' + sceneId + ' 吗？')) return;
+  var r = await apiFetch('/admin/api/scenes/delete/' + sceneId, {method:'DELETE'});
+  if (r && r.ok !== false) { showToast('已删除 ' + sceneId); scenesLoad(); }
+  else if (r) showToast(r.error||'删除失败', true);
+}
+function scenesEditYaml(sceneId) {
+  var content = scenesYamls[sceneId] || '';
+  document.getElementById('edit-scene-id').textContent = sceneId;
+  document.getElementById('edit-yaml-content').value = content;
+  openModal('modal-edit-yaml');
+}
+async function scenesSubmitEdit() {
+  var sceneId = document.getElementById('edit-scene-id').textContent;
+  var content = document.getElementById('edit-yaml-content').value;
+  if (!content.trim()) { showToast('YAML 内容不能为空', true); return; }
+  var r = await apiFetch('/admin/api/scenes/' + encodeURIComponent(sceneId) + '/update', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({yaml_content:content})
+  });
+  if (r && r.ok !== false) { showToast('已更新 ' + sceneId); closeModal('modal-edit-yaml'); scenesLoad(); }
+  else if (r) showToast(r.error||'更新失败', true);
+}
+// ── 场景 Agent 管理 ──────────────────────────────
+var _editingSceneId = '';
+
+async function scenesEditAgents(sceneId) {
+  _editingSceneId = sceneId;
+  document.getElementById('agent-scene-title').textContent = sceneId;
+  document.getElementById('new-agent-role').value = '';
+  document.getElementById('new-agent-class').value = 'core.llm.chat';
+  document.getElementById('new-agent-type').value = 'local';
+  openModal('modal-edit-agents');
+  await scenesLoadAgents();
+}
+
+async function scenesLoadAgents() {
+  var data = await apiFetch('/admin/api/scenes/' + encodeURIComponent(_editingSceneId) + '/agents');
+  if (!data) return;
+  var list = document.getElementById('scene-agents-list');
+  var agents = data.agents || [];
+  if (agents.length === 0) {
+    list.innerHTML = '<div class="text-dim" style="text-align:center;padding:12px">暂无 Agent，点击下方添加</div>';
+    return;
+  }
+  var html = '';
+  agents.forEach(function(a) {
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px">';
+    html += '<span class="badge badge-purple" style="min-width:60px">' + escHtml(a.role) + '</span>';
+    var typeLabel = a.type === 'local' ? '本地' : (a.type === 'external' ? '外部' : (a.type||'本地'));
+    html += '<code style="font-size:11px;flex:1">' + escHtml(a.class_path || '') + '</code>';
+    html += '<span class="badge ' + (a.type==='local'?'badge-green':'badge-orange') + '">' + typeLabel + '</span>';
+    html += '<a href="javascript:void(0)" onclick="scenesRemoveAgent(\'' + escHtml(a.role) + '\')" style="color:var(--red);font-size:14px;text-decoration:none;margin-left:4px" title="删除">✕</a>';
+    html += '</div>';
+  });
+  list.innerHTML = html;
+}
+
+async function scenesAddAgent() {
+  var role = document.getElementById('new-agent-role').value.trim();
+  var classPath = document.getElementById('new-agent-class').value.trim();
+  var agentType = document.getElementById('new-agent-type').value;
+  if (!role) { showToast('请输入角色名称', true); return; }
+  var data = await apiFetch('/admin/api/scenes/' + encodeURIComponent(_editingSceneId) + '/agents', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({role: role, class_path: classPath, agent_type: agentType})
+  });
+  if (data && data.ok !== false) {
+    showToast('✅ 已添加 ' + role);
+    document.getElementById('new-agent-role').value = '';
+    await scenesLoadAgents();
+  } else {
+    showToast((data && data.error) || '添加失败', true);
+  }
+}
+
+async function scenesRemoveAgent(role) {
+  if (!confirm('确定删除 Agent「' + role + '」？')) return;
+  var data = await apiFetch('/admin/api/scenes/' + encodeURIComponent(_editingSceneId) + '/agents/' + encodeURIComponent(role), {
+    method: 'DELETE'
+  });
+  if (data && data.ok !== false) {
+    showToast('已删除 ' + role);
+    await scenesLoadAgents();
+  } else {
+    showToast((data && data.error) || '删除失败', true);
+  }
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function scenesCreate() {
+  openModal('modal-create-scene');
+}
+async function scenesSubmitCreate() {
+  var sceneId = document.getElementById('new-scene-id').value.trim();
+  var template = document.getElementById('new-scene-template').value;
+  if (!sceneId) { showToast('请输入 Scene ID', true); return; }
+  var r = await apiFetch('/admin/api/scenes/create?scene_id='+encodeURIComponent(sceneId)+'&template='+encodeURIComponent(template), {method:'POST'});
+  if (r && r.ok !== false) { showToast('创建成功 ' + sceneId); closeModal('modal-create-scene'); scenesLoad(); }
+  else if (r) showToast(r.error||'创建失败', true);
+}
+
+document.addEventListener('DOMContentLoaded', scenesLoad);
+</script>
+
+<!-- 创建场景 Modal -->
+<div id="modal-create-scene" class="modal-overlay">
+  <div class="modal-box" style="max-width:420px">
+    <h3>📦 创建新场景</h3>
+    <label>Scene ID</label>
+    <input type="text" id="new-scene-id" placeholder="例如: my_scene">
+    <label>模板模式</label>
+    <select id="new-scene-template">
+      <option value="single">single - 单轮对话</option>
+      <option value="multi">multi - 多轮对话</option>
+      <option value="rag">rag - 检索增强</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-create-scene')">取消</button>
+      <button class="btn btn-sm btn-primary" onclick="scenesSubmitCreate()">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑 YAML Modal -->
+<div id="modal-edit-yaml" class="modal-overlay">
+  <div class="modal-box" style="max-width:680px">
+    <h3>✏️ 编辑场景 YAML: <span id="edit-scene-id" style="color:var(--primary)"></span></h3>
+    <textarea id="edit-yaml-content" style="width:100%;height:360px;font-family:monospace;font-size:12px;resize:vertical"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-edit-yaml')">取消</button>
+      <button class="btn btn-sm btn-primary" onclick="scenesSubmitEdit()">保存</button>
+    </div>
+  </div>
+</div>
+<!-- 编辑 Agent Modal -->
+<div id="modal-edit-agents" class="modal-overlay">
+  <div class="modal-box" style="max-width:520px">
+    <h3>🤖 场景 Agent: <span id="agent-scene-title" style="color:var(--primary)"></span></h3>
+    <div id="scene-agents-list" style="margin-bottom:12px;max-height:240px;overflow-y:auto;padding:4px 0">
+      <div class="text-dim" style="text-align:center;padding:12px">加载中...</div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:12px">
+      <label style="font-size:12px">添加 Agent</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+        <input type="text" id="new-agent-role" placeholder="角色名 (如 assistant)" style="flex:2;min-width:100px;font-size:12px">
+        <input type="text" id="new-agent-class" placeholder="class_path (如 core.llm.chat)" style="flex:3;min-width:140px;font-size:12px">
+        <select id="new-agent-type" style="flex:1;min-width:70px;font-size:12px">
+          <option value="local">本地</option>
+          <option value="external">外部</option>
+        </select>
+        <button class="btn btn-sm btn-primary" onclick="scenesAddAgent()" style="white-space:nowrap">添加</button>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:12px">
+      <button class="btn btn-sm" onclick="closeModal('modal-edit-agents')">关闭</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

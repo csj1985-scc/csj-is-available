@@ -1,0 +1,59 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-sessions">
+  <div class="content-header">
+    <div>
+      <h2>💬 会话列表</h2>
+      <div class="subtitle">管理所有活跃对话会话</div>
+    </div>
+    <div class="content-actions">
+      <span class="text-dim" id="sessions-count"></span>
+      <button class="btn btn-sm btn-danger" onclick="sessionsEndAll()">🗑️ 结束所有会话</button>
+    </div>
+  </div>
+  <div id="sessions-loading" class="empty-state"><div class="icon">⏳</div><p>加载会话列表...</p></div>
+  <div id="sessions-content" style="display:none"></div>
+  <div id="sessions-empty" class="empty-state" style="display:none"><div class="icon">💬</div><p>暂无活跃会话</p></div>
+</div>
+<script>
+async function sessionsLoad() {
+  var data = await apiFetch('/admin/api/sessions');
+  if (!data) return;
+  document.getElementById('sessions-loading').style.display = 'none';
+  var sessions = data.sessions || [];
+  if (sessions.length === 0) {
+    document.getElementById('sessions-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('sessions-count').textContent = '共 ' + sessions.length + ' 个活跃会话';
+  var html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th>Session ID</th><th>所属场景</th><th>最后活跃</th><th>Idle 时长</th><th>消息数</th><th>操作</th>';
+  html += '</tr></thead><tbody>';
+  sessions.forEach(function(s) {
+    html += '<tr><td><code>' + s.session_id + '</code></td>';
+    html += '<td><span class="badge badge-blue">' + s.scene_id + '</span></td>';
+    html += '<td class="text-dim" style="font-size:12px;white-space:nowrap">' + s.last_active + '</td>';
+    html += '<td class="text-dim" style="font-size:12px">' + s.idle + '</td>';
+    html += '<td class="text-center">' + s.msg_count + '</td>';
+    html += '<td><button class="btn btn-sm btn-danger" onclick="sessionsEnd(\'' + s.session_id + '\')">强制结束</button></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('sessions-content').innerHTML = html;
+  document.getElementById('sessions-content').style.display = 'block';
+  setPageTitle('会话列表');
+}
+async function sessionsEnd(sessionId) {
+  if (!confirm('确定强制结束会话 ' + sessionId + ' 吗？')) return;
+  var r = await apiFetch('/admin/api/sessions/' + sessionId + '/end', {method:'POST'});
+  if (r && r.ok !== false) { showToast('已结束 ' + sessionId); sessionsLoad(); }
+  else if (r) showToast(r.error||'操作失败', true);
+}
+async function sessionsEndAll() {
+  if (!confirm('确定结束所有会话吗？')) return;
+  var r = await apiFetch('/admin/api/sessions/end-all', {method:'POST'});
+  if (r && r.ok !== false) { showToast('已结束 ' + (r.ended||0) + ' 个会话'); sessionsLoad(); }
+}
+document.addEventListener('DOMContentLoaded', sessionsLoad);
+</script>
+{% endblock %}

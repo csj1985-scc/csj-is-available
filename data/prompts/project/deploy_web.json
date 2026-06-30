@@ -1,0 +1,15 @@
+{
+  "id": "deploy_web",
+  "category": "project",
+  "title": "部署 Web 项目",
+  "tags": ["部署", "上线", "运维"],
+  "applicable_to": ["Python", "Node.js", "Web"],
+  "template": "帮我部署 {project_name}。\n\n项目类型：{project_type}\n当前状态：{current_state}（本地能跑 / 已测试 / 未测试）\n部署目标：{deploy_target}（Vercel / Railway / 自建服务器 / 微信云开发）\n\n要求：\n1. 选最简单方案（个人项目不要上来就 K8s）\n2. 给完整步骤：环境准备 → 代码推送 → 平台配置 → 域名/HTTPS → 上线验证\n3. 常见坑：环境变量、依赖冲突、端口、跨域、CORS\n4. 上线后：监控怎么做（最简：日志 + 异常告警）\n5. 回滚方案（如果挂了怎么快速恢复）",
+  "variables": ["project_name", "project_type", "current_state", "deploy_target"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

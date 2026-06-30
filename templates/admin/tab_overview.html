@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-overview">
+  <div class="content-header">
+    <div>
+      <h2>🏠 首页</h2>
+      <div class="subtitle">系统概览 · 运行数据一目了然</div>
+    </div>
+    <div class="content-actions">
+      <span class="text-dim">PID: {{ pid }}</span>
+    </div>
+  </div>
+  <div id="overview-loading" class="empty-state"><div class="icon">⏳</div><p>加载概览数据...</p></div>
+  <div id="overview-content" style="display:none"></div>
+</div>
+<script>
+async function overviewLoad() {
+  var data = await apiFetch('/admin/api/stats');
+  if (!data) return;
+  document.getElementById('overview-loading').style.display = 'none';
+
+  var html = '<div class="card-grid">';
+  html += '<div class="card"><h3>📦 场景</h3><div class="big-num" style="color:var(--primary)">' + data.scenes_count + '</div><div class="label">注册场景数</div></div>';
+  html += '<div class="card"><h3>🤖 Agent</h3><div class="big-num" style="color:var(--primary)">' + data.agents_count + '</div><div class="label">运行中</div></div>';
+  html += '<div class="card"><h3>💬 会话</h3><div class="big-num" style="color:var(--accent-blue)">' + data.sessions_count + '</div><div class="label">活跃会话</div></div>';
+  html += '<div class="card"><h3>⚠ 告警</h3><div class="big-num" style="color:var(--orange)">' + data.alerts_count + '</div><div class="label">未处理告警</div></div>';
+  html += '<div class="card"><h3>📞 今日调用</h3><div class="big-num text-green">' + data.today_calls + '</div><div class="label">LLM 调用次数</div></div>';
+  html += '<div class="card"><h3>💰 今日费用</h3><div class="big-num text-orange" style="color:var(--orange)">¥' + data.today_cost.toFixed(5) + '</div><div class="label">Token 消耗</div></div>';
+  html += '</div>';
+
+  html += '<div class="card"><h3>📊 本月统计</h3>';
+  html += '<div class="flex" style="gap:40px;margin-top:8px">';
+  html += '<div><span class="text-dim">调用次数</span><div class="big-num" style="font-size:24px;color:var(--primary);margin-top:4px">' + data.month_calls + '</div></div>';
+  html += '<div><span class="text-dim">累计费用</span><div class="big-num" style="font-size:24px;color:var(--green);margin-top:4px">¥' + data.month_cost.toFixed(5) + '</div></div>';
+  html += '</div></div>';
+
+  document.getElementById('overview-content').innerHTML = html;
+  document.getElementById('overview-content').style.display = 'block';
+  setPageTitle('概览');
+}
+
+document.addEventListener('DOMContentLoaded', overviewLoad);
+</script>
+{% endblock %}

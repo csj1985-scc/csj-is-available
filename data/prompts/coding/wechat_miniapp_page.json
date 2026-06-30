@@ -1,0 +1,15 @@
+{
+  "id": "wechat_miniapp_page",
+  "category": "coding",
+  "title": "写微信小程序页面",
+  "tags": ["小程序", "微信", "wxml", "wxss"],
+  "applicable_to": ["微信小程序", "WXML", "WXSS"],
+  "template": "帮我写微信小程序的 {feature}。\n\n需求：{requirement}\n已有页面：{existing_pages}\n云开发：{use_cloud}（是/否）\n\n要求：\n1. 完整四件套：WXML + WXSS + JS + JSON\n2. 关键逻辑加注释\n3. 处理：用户授权 / 登录态 / 支付（如有）的边界情况\n4. 给出 tabBar / 页面跳转 / 数据绑定的示例\n5. 如果用云开发，给云函数和数据库集合设计\n6. 个人主体的限制（getPhoneNumber 等需手动输入）\n\n输出格式：四个文件分开列，文件名标明。",
+  "variables": ["feature", "requirement", "existing_pages", "use_cloud"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

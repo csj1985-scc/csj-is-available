@@ -1,0 +1,19 @@
+{
+  "id": "distill_1782745249_0",
+  "title": "【多Agent协商】【悟道当前状态】\n版本: 0.7.2-d",
+  "category": "preference",
+  "tags": [
+    "distilled",
+    "daily"
+  ],
+  "template": "【多Agent协商】【悟道当前状态】\n版本: 0.7.2-dev\n模型: DeepSeek-chat (主) + GLM-4-Flash (备)\n\n最近更新:\nde37a86 v0.7.1 release: external_agent 完全修复 + 场景reload + 老实例兼容\n71bcc2c v0.7.1: external_agent 类型 (Coze/OpenClaw 转发)\n9297007 v0.7.0: discuss/execute + 3 示例场景\n6ab1e0a v0.7.0-dev2: 场景路由+统一接口+老接口兼容+alerts\n1d37aec v0.7.0-dev: 场景骨架 + CRUD API\n1a164c9 v0.6.2.1: 配置抽到config/models.yaml\n5c69d2c fix .gitignore: keep data/prompts in repo\n97ca0cd add .gitignore, cleanup tracked data files\n4f5fb79 v0.6.2: 双LLM兜底 + 调用明细日志\n1de8430 保存当前版本\n\n代码规模:\n  Python 模块: 99 个\n  HTML 模板: 22 个\n  JS 文件: 3002 个\n\n今日所学: 64 条\n记忆会话数: 0\n\n=====\n\n【讨论议题】\n快速测试 → 结论摘要：目前“悟道”项目正处于从单一对话模型向多场景智能体系统转型的关键阶段，v0.7.x系列通过引入external_agent、场景路由和discuss/execute模式奠定了新架构基础。系统稳定性与兼容性得到了重视，但场景复杂性、记忆机制实效性及代码规模膨胀是当前主要风险。核心建议是优先稳定核心架构，再逐步推进功能丰富。\n分歧点：关于场景系统复杂性的处理方式：工程师建议引入状态机管理场景",
+  "source": "daily_distill",
+  "applicable_to": [],
+  "variables": [],
+  "created_at": "2026-06-29T23:00:49.793583",
+  "appearances": 4,
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

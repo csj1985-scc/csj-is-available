@@ -1,0 +1,108 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-cost">
+  <div class="content-header">
+    <div>
+      <h2>💰 成本面板</h2>
+      <div class="subtitle">按时间维度查看 Token 消耗与费用</div>
+    </div>
+    <div class="content-actions">
+      <select id="cost-scene-filter" onchange="costLoad()">
+        <option value="">全部场景</option>
+      </select>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <button class="btn btn-sm" id="cost-btn-today" onclick="costSwitchWindow('today')">📅 当日</button>
+    <button class="btn btn-sm" id="cost-btn-week" onclick="costSwitchWindow('week')">📅 本周</button>
+    <button class="btn btn-sm btn-primary" id="cost-btn-month" onclick="costSwitchWindow('month')">📅 本月</button>
+  </div>
+  <div id="cost-loading" class="empty-state"><div class="icon">⏳</div><p>加载成本数据...</p></div>
+  <div id="cost-content" style="display:none"></div>
+</div>
+<script>
+var costWindow = 'month';
+
+async function costLoad() {
+  var scene = document.getElementById('cost-scene-filter').value;
+  var url = '/admin/api/cost?window=' + costWindow;
+  if (scene) url += '&scene=' + encodeURIComponent(scene);
+  var data = await apiFetch(url);
+  if (!data) return;
+  document.getElementById('cost-loading').style.display = 'none';
+
+  // Populate scene filter
+  var sel = document.getElementById('cost-scene-filter');
+  if (sel.options.length <= 1) {
+    (data.all_scenes || []).forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sel.appendChild(opt);
+    });
+  }
+
+  // Summary cards
+  var totalCalls = data.today_calls;
+  var totalCost = data.today_cost;
+  if (costWindow === 'week') { totalCalls = data.week_calls; totalCost = data.week_cost; }
+  if (costWindow === 'month') { totalCalls = data.month_calls; totalCost = data.month_cost; }
+
+  var html = '<div class="card-grid">';
+  html += '<div class="card"><h3>' + (costWindow==='today'?'当日':costWindow==='week'?'本周':'本月') + '调用</h3><div class="big-num" style="color:var(--primary)">' + totalCalls + '</div></div>';
+  html += '<div class="card"><h3>' + (costWindow==='today'?'当日':costWindow==='week'?'本周':'本月') + '费用</h3><div class="big-num text-green">¥' + totalCost.toFixed(5) + '</div></div>';
+  html += '<div class="card"><h3>本周调用</h3><div class="big-num" style="color:var(--primary)">' + data.week_calls + '</div></div>';
+  html += '<div class="card"><h3>本周费用</h3><div class="big-num text-green">¥' + data.week_cost.toFixed(5) + '</div></div>';
+  html += '<div class="card"><h3>本月调用</h3><div class="big-num" style="color:var(--primary)">' + data.month_calls + '</div></div>';
+  html += '<div class="card"><h3>本月费用</h3><div class="big-num text-green">¥' + data.month_cost.toFixed(5) + '</div></div>';
+  html += '</div>';
+
+  // By model
+  html += '<h3 class="mb-2">按模型统计</h3>';
+  html += '<div class="table-wrap mb-3"><table><thead><tr>';
+  html += '<th>模型</th><th>今日调用</th><th>今日费用</th><th>本周调用</th><th>本周费用</th><th>本月调用</th><th>本月费用</th>';
+  html += '</tr></thead><tbody>';
+  (data.by_model || []).forEach(function(m) {
+    html += '<tr>';
+    html += '<td><span class="badge badge-purple">' + m.model + '</span></td>';
+    html += '<td class="text-center">' + m.today_calls + '</td>';
+    html += '<td class="text-center text-dim">¥' + m.today_cost.toFixed(5) + '</td>';
+    html += '<td class="text-center">' + m.week_calls + '</td>';
+    html += '<td class="text-center text-dim">¥' + m.week_cost.toFixed(5) + '</td>';
+    html += '<td class="text-center">' + m.month_calls + '</td>';
+    html += '<td class="text-center text-dim">¥' + m.month_cost.toFixed(5) + '</td>';
+    html += '</tr>';
+  });
+  if (!data.by_model || data.by_model.length === 0) {
+    html += '<tr><td colspan="7" class="text-center text-dim" style="padding:20px">暂无数据</td></tr>';
+  }
+  html += '</tbody></table></div>';
+
+  // Top 5 scenes
+  html += '<h3 class="mb-2">按场景排行（本月 TOP 5）</h3>';
+  html += '<div class="table-wrap"><table><thead><tr><th>#</th><th>场景</th><th>调用次数</th><th>总费用</th></tr></thead><tbody>';
+  (data.by_scene_top5 || []).forEach(function(s, i) {
+    html += '<tr><td class="text-dim">' + (i+1) + '</td><td><code>' + s.scene_id + '</code></td><td class="text-center">' + s.calls + '</td><td class="text-center text-dim">¥' + s.cost.toFixed(5) + '</td></tr>';
+  });
+  if (!data.by_scene_top5 || data.by_scene_top5.length === 0) {
+    html += '<tr><td colspan="4" class="text-center text-dim" style="padding:20px">暂无数据</td></tr>';
+  }
+  html += '</tbody></table></div>';
+
+  document.getElementById('cost-content').innerHTML = html;
+  document.getElementById('cost-content').style.display = 'block';
+  setPageTitle('成本面板');
+}
+
+function costSwitchWindow(w) {
+  costWindow = w;
+  document.querySelectorAll('.filter-bar .btn').forEach(function(b) { b.classList.remove('btn-primary'); });
+  var btn = document.getElementById('cost-btn-' + w);
+  if (btn) btn.classList.add('btn-primary');
+  document.getElementById('cost-loading').style.display = 'block';
+  document.getElementById('cost-content').style.display = 'none';
+  costLoad();
+}
+
+document.addEventListener('DOMContentLoaded', costLoad);
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{
+  "id": "scaffold_project",
+  "category": "project",
+  "title": "搭项目脚手架",
+  "tags": ["脚手架", "项目初始化", "从零开始"],
+  "applicable_to": ["Python", "Node.js", "通用"],
+  "template": "帮我从零搭一个 {project_type} 项目。\n\n技术栈：{tech_stack}\n核心功能：{core_features}\n部署目标：{deploy_target}（本地/云端/小程序）\n\n要求：\n1. 完整目录结构（树形）\n2. 关键配置文件：package.json / requirements.txt / .env.example / .gitignore\n3. 一个最小可运行示例（Hello World 级别）\n4. README.md\n5. 后续开发的 TODO 清单（按优先级）\n6. 不引入花哨的依赖，能少则少",
+  "variables": ["project_type", "tech_stack", "core_features", "deploy_target"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

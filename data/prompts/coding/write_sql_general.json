@@ -1,0 +1,15 @@
+{
+  "id": "write_sql_general",
+  "category": "coding",
+  "title": "写 SQL 查询",
+  "tags": ["sql", "数据库", "mysql", "postgresql"],
+  "applicable_to": ["MySQL", "PostgreSQL", "SQLite"],
+  "template": "帮我写 SQL。\n\n需求：{requirement}\n数据库：{db_type}\n表结构：{schema}\n\n要求：\n1. 先复述我理解的需求，确认没跑偏\n2. 给出 SQL（关键段加注释）\n3. 解释执行思路（JOIN 顺序、过滤时机）\n4. 性能建议：是否需要建索引、建在哪些字段、为什么\n5. 如果数据量大（>100w 行），给分页/分批方案",
+  "variables": ["requirement", "db_type", "schema"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

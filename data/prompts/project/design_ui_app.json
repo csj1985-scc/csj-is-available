@@ -1,0 +1,15 @@
+{
+  "id": "design_ui_app",
+  "category": "project",
+  "title": "界面设计",
+  "tags": ["ui", "ux", "设计", "界面"],
+  "applicable_to": ["小程序", "Web", "移动 App"],
+  "template": "帮我设计 {product} 的界面。\n\n平台：{platform}（小程序/Web/移动 App）\n目标用户：{target_users}\n核心功能：{core_features}\n\n设计原则：\n- 简洁不花哨\n- 老人类应用：大字体（≥18px）、大按钮（≥44px）、高对比色\n- 科技感但避免 AI 感（不要均匀对称、生硬线条、过多特效、轨道环）\n- 自然弯曲曲线，主干粗→末梢细渐变\n- 配色：≤3 主色，给出 hex 色值\n\n输出：\n1. 页面清单（哪些页面、各自干什么）\n2. 每个页面的布局描述（区块、按钮、流程）\n3. 关键交互流程（从进入到完成任务的步骤）\n4. 配色方案（含 hex）\n5. 字体 / 间距规范",
+  "variables": ["product", "platform", "target_users", "core_features"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

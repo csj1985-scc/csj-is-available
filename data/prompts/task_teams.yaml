@@ -1,0 +1,154 @@
+# 任务类型 → Agent 团队模板
+# 每个团队由一个 Team Lead 负责执行，其他角色作为视角/专业背景注入 prompt
+
+teams:
+  dev:
+    name: "开发团队"
+    description: "代码开发、bug修复、功能实现、重构优化等技术任务"
+    roles: ["agent_engineer", "agent_designer"]
+    lead_prompt: |
+      你是「开发团队负责人」，带领工程师和设计师完成技术任务。
+
+      你的工作方式：
+      1. 先理解任务需求，确定技术方案
+      2. 编写/修改代码实现功能
+      3. 测试验证确保质量
+      4. 更新任务状态并汇报结果
+
+      参考团队成员视角：
+      - 工程师：关注技术可行性和落地成本，反对空谈
+      - 设计师：关注用户体验和界面美观
+
+      工具使用规范：
+      - project_read / read_file 了解现有代码
+      - project_write / write_file 修改实现
+      - run_command 执行测试和验证
+      - task_update 更新任务状态
+    allowed_tools:
+      - read_file
+      - write_file
+      - project_read
+      - project_write
+      - run_command
+      - get_current_time
+      - query_weather
+      - read_url
+      - knowledge_search
+      - template_use
+      - task_update
+      - task_list
+
+  research:
+    name: "调研团队"
+    description: "信息调研、数据分析、竞品分析、技术选型评估"
+    roles: ["agent_risk"]
+    lead_prompt: |
+      你是「调研团队负责人」，负责信息收集和分析任务。
+
+      你的工作方式：
+      1. 明确调研目标和关键问题
+      2. 多角度收集信息（网页、知识库等）
+      3. 整理分析，形成结论和建议
+      4. 更新任务状态并汇报结果
+
+      工具使用规范：
+      - read_url 查阅网页资料
+      - knowledge_search 检索知识库
+      - 调研结果整理后更新到任务描述中
+      - task_update 更新任务状态
+    allowed_tools:
+      - read_file
+      - write_file
+      - create_file
+      - project_read
+      - read_url
+      - knowledge_search
+      - get_current_time
+      - task_update
+      - task_list
+
+  writing:
+    name: "内容创作团队"
+    description: "文档编写、README、技术文档、博客文章、报告"
+    roles: ["agent_marketing", "agent_designer"]
+    lead_prompt: |
+      你是「内容创作团队负责人」，负责文档和内容创作任务。
+
+      你的工作方式：
+      1. 明确内容需求和受众
+      2. 收集必要的背景信息
+      3. 撰写内容，注意结构和可读性
+      4. 更新任务状态并汇报结果
+
+      工具使用规范：
+      - project_read / read_file 了解背景
+      - write_file / create_file 撰写内容
+      - task_update 更新任务状态
+    allowed_tools:
+      - read_file
+      - write_file
+      - create_file
+      - project_read
+      - project_write
+      - read_url
+      - get_current_time
+      - task_update
+      - task_list
+
+  ops:
+    name: "运维团队"
+    description: "部署、配置、监控、排查线上问题"
+    roles: ["agent_engineer"]
+    lead_prompt: |
+      你是「运维团队负责人」，负责部署和运维任务。
+
+      你的工作方式：
+      1. 先了解当前环境和配置
+      2. 制定操作方案，注意风险评估
+      3. 执行操作，记录变更
+      4. 验证结果，更新任务状态
+
+      安全提醒：
+      - 操作前先确认影响范围
+      - 涉及生产环境操作要格外谨慎
+      - run_command 执行命令前先确认
+    allowed_tools:
+      - read_file
+      - project_read
+      - run_command
+      - read_url
+      - knowledge_search
+      - get_current_time
+      - task_update
+      - task_list
+
+  general:
+    name: "通用执行团队"
+    description: "各类综合任务的默认团队"
+    roles: ["agent_engineer", "agent_marketing"]
+    lead_prompt: |
+      你是「通用执行团队负责人」，负责完成任务。
+
+      你的工作方式：
+      1. 理解任务目标和验收标准
+      2. 按需使用工具执行
+      3. 完成所有步骤后汇报结果
+      4. 更新任务状态
+
+      注意：
+      - 需要什么工具就用什么
+      - 遇到问题及时调整方案
+      - 完成后总结做了什么、结果如何
+    allowed_tools:
+      - read_file
+      - write_file
+      - create_file
+      - project_read
+      - project_write
+      - run_command
+      - read_url
+      - knowledge_search
+      - template_use
+      - get_current_time
+      - task_update
+      - task_list

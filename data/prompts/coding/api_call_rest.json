@@ -1,0 +1,15 @@
+{
+  "id": "api_call_rest",
+  "category": "coding",
+  "title": "调 REST API",
+  "tags": ["API", "HTTP", "requests", "对接"],
+  "applicable_to": ["Python", "JavaScript", "REST"],
+  "template": "我要调 {api_name} 的 {endpoint} 接口。\n\nAPI 文档：{api_doc_or_link}\n\n需求：\n- 输入参数：{input_params}\n- 期望输出：{expected_output}\n\n要求：\n1. 用 {language} 写\n2. 包含错误处理：超时、重试（最多 3 次）、异常捕获、HTTP 状态码判断\n3. 关键参数加注释\n4. 给一个测试样例（带 mock 数据）",
+  "variables": ["api_name", "endpoint", "api_doc_or_link", "input_params", "expected_output", "language"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

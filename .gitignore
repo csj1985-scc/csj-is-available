@@ -1,0 +1,55 @@
+﻿# 悟道项目 .gitignore
+
+# 运行时数据：日志/数据库/用户数据
+data/model_log.json
+data/server.pid
+data/server*.log
+data/usage_stats.json
+data/consultation/*.json
+
+chroma_db/
+*.sqlite3
+
+# 沙箱文件
+sandbox/
+
+# 旧备份
+fixes/chroma_db/
+
+# 临时/测试
+*.backup
+__pycache__/
+.env
+UPGRADE_*.md
+test_*.py
+
+# 模型配置文件（含 API key）
+config/models.yaml
+
+# LLM 调用明细日志
+data/model_log.json
+
+# 场景配置（admin 创建，不提交 git；default.yaml 作为基线提交）
+data/scenes/
+!data/scenes/default.yaml
+
+# 大文件：node_modules / 模型 / 语音模型
+desktop/node_modules/
+desktop/models/
+desktop/dist/
+
+# 知识库向量数据库（二进制大文件）
+data/chroma_knowledge/
+data/chroma_test/
+
+# 生成的图片
+static/images/
+
+# 临时脚本
+_*.py
+_*.js
+_*.txt
+
+# bak 备份文件
+*.bak
+*.bak.*

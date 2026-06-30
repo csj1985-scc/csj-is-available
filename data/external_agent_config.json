@@ -1,0 +1,39 @@
+{
+  "agents": [
+    {
+      "id": "ext_1782308034",
+      "name": "test-ext",
+      "endpoint": "https://httpbin.org/post",
+      "auth_token": ""
+    },
+    {
+      "id": "openclaw_pm",
+      "name": "老柯",
+      "endpoint": "http://127.0.0.1:8000/api/external/call/openclaw_pm",
+      "auth_token": "",
+      "provider": "openclaw",
+      "base_url": "http://localhost:18789/v1",
+      "model": "openclaw/pm",
+      "api_key": "30c1007d6a81380224ef7f444d63732bc79c409aace75767"
+    },
+    {
+      "id": "local_qwen",
+      "name": "本地小模型",
+      "endpoint": "",
+      "auth_token": "",
+      "provider": "ollama",
+      "base_url": "http://localhost:11434/v1",
+      "model": "qwen2.5:1.5b"
+    },
+    {
+      "id": "openclaw_lanxingkouzi",
+      "name": "揽星扣子",
+      "endpoint": "",
+      "auth_token": "",
+      "provider": "openclaw",
+      "base_url": "http://localhost:18789/v1",
+      "model": "openclaw/lanxingkouzi",
+      "api_key": "30c1007d6a81380224ef7f444d63732bc79c409aace75767"
+    }
+  ]
+}

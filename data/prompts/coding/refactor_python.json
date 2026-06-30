@@ -1,0 +1,15 @@
+{
+  "id": "refactor_python",
+  "category": "coding",
+  "title": "重构代码",
+  "tags": ["重构", "代码优化", "代码质量"],
+  "applicable_to": ["Python", "JavaScript", "通用"],
+  "template": "帮我重构这段代码，让它 {goal}。\n\n原代码：\n{code_snippet}\n\n约束：\n- 不改外部行为\n- 保留所有功能\n- {additional_constraints}\n\n输出：\n1. 重构后的完整代码（带注释）\n2. 改了哪些地方、为什么\n3. 性能/可读性提升的量化说明（如果可量化）",
+  "variables": ["goal", "code_snippet", "additional_constraints"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

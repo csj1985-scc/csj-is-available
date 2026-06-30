@@ -1,0 +1,122 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-task">
+  <div class="content-header">
+    <div>
+      <h2>📋 任务执行记录</h2>
+      <div class="subtitle">LLM 调用与 Agent 任务执行历史</div>
+    </div>
+    <div class="content-actions">
+      <span class="text-dim" id="task-count"></span>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="task-filter" placeholder="搜索任务..." style="flex:1;max-width:240px" oninput="taskFilter()">
+    <select id="task-status-filter" onchange="taskFilter()" style="min-width:100px">
+      <option value="">全部状态</option>
+      <option value="success">成功</option>
+      <option value="error">失败</option>
+      <option value="fallback">降级</option>
+    </select>
+    <select id="task-days-filter" onchange="taskLoad()" style="min-width:80px">
+      <option value="1">今天</option>
+      <option value="3" selected>3天</option>
+      <option value="7">7天</option>
+      <option value="30">30天</option>
+    </select>
+  </div>
+  <div id="task-loading" class="empty-state"><div class="icon">⏳</div><p>加载任务记录...</p></div>
+  <div id="task-content" style="display:none"></div>
+  <div id="task-empty" class="empty-state" style="display:none"><div class="icon">📋</div><p>暂无任务记录</p></div>
+</div>
+<script>
+var _taskData = [];
+
+async function taskLoad() {
+  var days = parseInt(document.getElementById('task-days-filter').value) || 3;
+  var data = await apiFetch('/admin/api/llm?days=' + days);
+  if (!data) return;
+  document.getElementById('task-loading').style.display = 'none';
+  _taskData = data.logs || [];
+  document.getElementById('task-count').textContent = '共 ' + _taskData.length + ' 条';
+  taskRender(_taskData);
+}
+
+function taskRender(logs) {
+  var container = document.getElementById('task-content');
+  if (!logs || logs.length === 0) {
+    document.getElementById('task-empty').style.display = 'block';
+    container.style.display = 'none';
+    return;
+  }
+  document.getElementById('task-empty').style.display = 'none';
+  var html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th>时间</th><th>类型</th><th>场景</th><th>Agent</th><th>模型</th><th>Token</th><th>耗时</th><th>费用</th><th>状态</th>';
+  html += '</tr></thead><tbody>';
+  logs.forEach(function(l) {
+    var ts = (l.ts || l.timestamp || '').slice(0, 19).replace('T', ' ');
+    var taskType = l.task_type || l.task || '-';
+    var agentId = l.agent_id || '-';
+    var modelType = l.model_type || '-';
+    var inputT = l.input_tokens || 0;
+    var outputT = l.output_tokens || 0;
+    var totalT = inputT + outputT;
+    var cost = l.cost_rmb || 0;
+    var dur = l.duration_ms || 0;
+    var sceneId = l.scene_id || '';
+
+    // 判断状态：优先用 success 布尔字段，再回退 status
+    var isSucc = l.success === true;
+    var isErr = l.success === false || l.status === 'error' || l.error || l.reason;
+    var isFallback = l.model_type === 'fallback' && !isSucc;
+    var statusBadge = 'badge-green';
+    var statusText = '成功';
+    if (isErr && isFallback) { statusBadge = 'badge-orange'; statusText = '降级'; }
+    else if (isErr) { statusBadge = 'badge-red'; statusText = '失败'; }
+
+    html += '<tr>';
+    html += '<td style="font-size:12px;white-space:nowrap">' + ts + '</td>';
+    html += '<td><span class="badge badge-purple" style="font-size:10px">' + escHtml(taskType) + '</span></td>';
+    html += '<td style="font-size:12px">' + escHtml(sceneId) + '</td>';
+    html += '<td style="font-size:12px">' + escHtml(agentId) + '</td>';
+    html += '<td style="font-size:12px">' + escHtml(modelType) + '</td>';
+    html += '<td style="font-size:12px">' + totalT + '</td>';
+    html += '<td style="font-size:12px">' + (dur > 0 ? (dur/1000).toFixed(1) + 's' : '-') + '</td>';
+    html += '<td style="font-size:12px">' + (cost > 0 ? '¥' + cost.toFixed(6) : '-') + '</td>';
+    html += '<td><span class="badge ' + statusBadge + '">' + statusText + '</span></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+  container.style.display = 'block';
+  setPageTitle('任务');
+}
+
+function taskFilter() {
+  var q = document.getElementById('task-filter').value.toLowerCase().trim();
+  var statusFilter = document.getElementById('task-status-filter').value;
+  var filtered = _taskData.filter(function(l) {
+    if (q && !JSON.stringify(l).toLowerCase().includes(q)) return false;
+    if (statusFilter) {
+      var isErr = l.success === false || l.error || l.reason;
+      var isFallback = l.model_type === 'fallback' && isErr;
+      if (statusFilter === 'error' && !isErr) return false;
+      if (statusFilter === 'error' && isFallback) return false;
+      if (statusFilter === 'fallback' && !isFallback) return false;
+      if (statusFilter === 'success' && isErr) return false;
+    }
+    return true;
+  });
+  taskRender(filtered);
+}
+
+function escHtml(s) {
+  if (!s && s !== 0) return '';
+  var d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', taskLoad);
+</script>
+{% endblock %}

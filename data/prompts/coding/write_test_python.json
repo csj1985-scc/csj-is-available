@@ -1,0 +1,15 @@
+{
+  "id": "write_test_python",
+  "category": "coding",
+  "title": "写 Python 测试用例",
+  "tags": ["测试", "pytest", "unittest", "单元测试"],
+  "applicable_to": ["Python", "pytest", "unittest"],
+  "template": "为这段代码写测试。\n\n代码：\n{code_snippet}\n\n测试框架：{test_framework}\n覆盖要求：\n1. 正常路径（happy path）\n2. 边界情况（空值、极值、None、空列表）\n3. 异常处理（参数错误、外部依赖失败）\n4. 性能 / 并发（如果适用）\n\n输出：\n- 完整测试文件代码\n- 运行命令（pytest / python -m unittest）\n- 测试覆盖度估计",
+  "variables": ["code_snippet", "test_framework"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

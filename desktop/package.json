@@ -1,0 +1,38 @@
+{
+  "name": "wudao-desktop",
+  "version": "0.7.2",
+  "description": "悟道桌面端 - 多Agent协作平台",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "author": "曹峰",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.wudao.desktop",
+    "productName": "悟道",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/wudao_logo.jpg"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/wudao_logo.jpg"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/wudao_logo.jpg"
+    }
+  }
+}

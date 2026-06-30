@@ -1,0 +1,10 @@
+{
+  "version": "0.1",
+  "updated_at": "2026-06-21",
+  "agents": {
+    "agent_engineer": "工程师",
+    "agent_designer": "设计师",
+    "agent_marketing": "市场分析师",
+    "agent_risk": "风控官"
+  }
+}

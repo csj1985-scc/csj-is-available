@@ -1,0 +1,290 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div id="tab-external">
+  <div class="content-header">
+    <div>
+      <h2>🌐 外部 Agent</h2>
+      <div class="subtitle">管理与监控第三方外部 Agent 服务</div>
+    </div>
+    <div class="content-actions">
+      <button class="btn btn-primary btn-sm" onclick="externalShowAdd()">➕ 添加 Agent</button>
+      <span class="text-dim" id="external-count"></span>
+    </div>
+  </div>
+  <div id="external-loading" class="empty-state"><div class="icon">⏳</div><p>加载外部 Agent 配置...</p></div>
+  <div id="external-content" style="display:none"></div>
+  <div id="external-empty" class="empty-state" style="display:none"><div class="icon">🌐</div><p>暂无外部 Agent 配置，点击上方「添加 Agent」开始</p></div>
+  <div id="test-result" style="display:none" class="card mt-3">
+    <div class="flex-between">
+      <h3 id="test-title" style="margin-bottom:0">测试结果</h3>
+      <button class="btn btn-sm" onclick="document.getElementById('test-result').style.display='none'">✕ 关闭</button>
+    </div>
+    <pre id="test-body" style="margin-top:8px"></pre>
+  </div>
+</div>
+
+<!-- 添加/编辑 Agent Modal -->
+<div id="modal-external-agent" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px">
+    <h3 id="external-modal-title">➕ 添加外部 Agent</h3>
+    <input type="hidden" id="edit-agent-id" value="">
+
+    <label>Agent ID</label>
+    <input type="text" id="ext-agent-id" placeholder="留空自动生成">
+
+    <label>名称</label>
+    <input type="text" id="ext-name" placeholder="例如: 老柯">
+
+    <!-- 连接方式切换 -->
+    <label>连接方式</label>
+    <div class="flex gap-2" style="margin-bottom:12px">
+      <label class="radio-chip" onclick="toggleConnType('endpoint')">
+        <input type="radio" name="conn-type" value="endpoint" checked onchange="toggleConnType('endpoint')"> HTTP Endpoint
+      </label>
+      <label class="radio-chip" onclick="toggleConnType('model')">
+        <input type="radio" name="conn-type" value="model" onchange="toggleConnType('model')"> 模型 API
+      </label>
+    </div>
+
+    <!-- Endpoint 模式 -->
+    <div id="conn-endpoint-fields">
+      <label>Endpoint URL</label>
+      <input type="text" id="ext-endpoint" placeholder="https://api.example.com/chat">
+      <label>鉴权 Token（可选）</label>
+      <input type="text" id="ext-auth-token" placeholder="Bearer token 或留空">
+    </div>
+
+    <!-- 模型 API 模式 -->
+    <div id="conn-model-fields" style="display:none">
+      <label>Provider</label>
+      <select id="ext-provider" onchange="onProviderChange()">
+        <option value="ollama">Ollama（本地）</option>
+        <option value="openai">OpenAI</option>
+        <option value="custom">自定义</option>
+      </select>
+      <label>Base URL</label>
+      <input type="text" id="ext-base-url" value="http://localhost:11434/v1" placeholder="http://localhost:11434/v1">
+      <label>模型名称</label>
+      <input type="text" id="ext-model" placeholder="例如: qwen2.5:1.5b">
+      <label>API Key（可选）</label>
+      <input type="password" id="ext-api-key" placeholder="Ollama 可留空">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-external-agent')">取消</button>
+      <button class="btn btn-sm btn-primary" id="external-save-btn" onclick="externalSubmit()">添加</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.radio-chip { display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid var(--border); border-radius:20px; cursor:pointer; font-size:13px; background:var(--bg); }
+.radio-chip input { display:none; }
+.radio-chip:has(input:checked) { background:var(--primary); color:#fff; border-color:var(--primary); }
+</style>
+
+<script>
+var _editingExternalId = '';
+
+function toggleConnType(type) {
+  document.getElementById('conn-endpoint-fields').style.display = type === 'endpoint' ? '' : 'none';
+  document.getElementById('conn-model-fields').style.display = type === 'model' ? '' : 'none';
+}
+
+function onProviderChange() {
+  var p = document.getElementById('ext-provider').value;
+  var urlInput = document.getElementById('ext-base-url');
+  if (p === 'ollama') urlInput.value = 'http://localhost:11434/v1';
+  else if (p === 'openai') urlInput.value = 'https://api.openai.com/v1';
+  else urlInput.value = '';
+}
+
+async function externalLoad() {
+  var data = await apiFetch('/admin/api/external');
+  if (!data) return;
+  document.getElementById('external-loading').style.display = 'none';
+  var agents = data.agents || [];
+  if (agents.length === 0) {
+    document.getElementById('external-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('external-count').textContent = '共 ' + agents.length + ' 个外部 Agent';
+  var html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th>Agent ID</th><th>名称</th><th>类型</th><th>模型/Endpoint</th><th>鉴权状态</th><th>调用次数</th><th>成功率</th><th>最近错误</th><th>操作</th>';
+  html += '</tr></thead><tbody>';
+  agents.forEach(function(a) {
+    var authBadge = a.auth_status === '已配' ? 'badge-green' : 'badge-orange';
+    var authText = a.auth_status === '已配' ? '✅ 已配' : '⚠️ 未配';
+    var rateColor = a.success_rate >= 0.8 ? 'text-green' : (a.success_rate >= 0.5 ? 'text-accent' : 'text-red');
+    var typeBadge = a.connection_type === 'model' ? 'badge-blue' : 'badge-gray';
+    var typeLabel = a.connection_type === 'model' ? '🤖 模型' : '🌐 Endpoint';
+    var detail = a.connection_type === 'model'
+      ? (a.provider + '/' + a.model)
+      : (a.endpoint || '-');
+    html += '<tr><td><code>' + escHtml(a.id) + '</code></td>';
+    html += '<td>' + escHtml(a.name) + '</td>';
+    html += '<td><span class="badge ' + typeBadge + '">' + typeLabel + '</span></td>';
+    html += '<td style="font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis" title="' + escHtml(detail) + '">' + escHtml(detail) + '</td>';
+    html += '<td><span class="badge ' + authBadge + '">' + authText + '</span></td>';
+    html += '<td class="text-center">' + a.calls_total + '</td>';
+    html += '<td class="text-center"><span class="' + rateColor + '">' + (a.success_rate*100).toFixed(0) + '%</span></td>';
+    html += '<td style="font-size:12px;color:var(--red);max-width:180px;overflow:hidden;text-overflow:ellipsis">' + (a.last_error || '-') + '</td>';
+    html += '<td><div class="btn-group">';
+    html += '<button class="btn btn-sm btn-primary" onclick="externalTestCall(\'' + escHtml(a.id) + '\')">▶️ 测试</button>';
+    html += '<button class="btn btn-sm" onclick="externalShowEdit(\'' + escHtml(a.id) + '\')">✏️</button>';
+    html += '<button class="btn btn-sm btn-danger" onclick="externalDelete(\'' + escHtml(a.id) + '\')">🗑</button>';
+    html += '</div></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('external-content').innerHTML = html;
+  document.getElementById('external-content').style.display = 'block';
+  setPageTitle('外部 Agent');
+}
+
+function externalShowAdd() {
+  _editingExternalId = '';
+  document.getElementById('external-modal-title').textContent = '➕ 添加外部 Agent';
+  document.getElementById('external-save-btn').textContent = '添加';
+  document.getElementById('edit-agent-id').value = '';
+  document.getElementById('ext-agent-id').value = '';
+  document.getElementById('ext-agent-id').disabled = false;
+  document.getElementById('ext-name').value = '';
+  document.getElementById('ext-endpoint').value = '';
+  document.getElementById('ext-auth-token').value = '';
+  document.getElementById('ext-base-url').value = 'http://localhost:11434/v1';
+  document.getElementById('ext-model').value = '';
+  document.getElementById('ext-api-key').value = '';
+  document.getElementById('ext-provider').value = 'ollama';
+  toggleConnType('endpoint');
+  document.querySelector('input[name="conn-type"][value="endpoint"]').checked = true;
+  openModal('modal-external-agent');
+}
+
+async function externalShowEdit(agentId) {
+  _editingExternalId = agentId;
+  document.getElementById('external-modal-title').textContent = '✏️ 编辑外部 Agent';
+  document.getElementById('external-save-btn').textContent = '保存';
+  document.getElementById('edit-agent-id').value = agentId;
+  document.getElementById('ext-agent-id').value = agentId;
+  document.getElementById('ext-agent-id').disabled = true;
+
+  var data = await apiFetch('/admin/api/external');
+  if (!data) return;
+  var agents = data.agents || [];
+  var agent = agents.find(function(a) { return a.id === agentId; });
+  if (!agent) { showToast('Agent 未找到', true); return; }
+
+  document.getElementById('ext-name').value = agent.name || '';
+  document.getElementById('ext-auth-token').value = '';
+  document.getElementById('ext-api-key').value = '';
+
+  var isModel = agent.connection_type === 'model';
+  if (isModel) {
+    document.getElementById('ext-provider').value = agent.provider || 'ollama';
+    document.getElementById('ext-base-url').value = agent.base_url || 'http://localhost:11434/v1';
+    document.getElementById('ext-model').value = agent.model || '';
+    document.getElementById('ext-endpoint').value = '';
+    toggleConnType('model');
+    document.querySelector('input[name="conn-type"][value="model"]').checked = true;
+    onProviderChange();
+  } else {
+    document.getElementById('ext-endpoint').value = agent.endpoint || '';
+    document.getElementById('ext-base-url').value = 'http://localhost:11434/v1';
+    toggleConnType('endpoint');
+    document.querySelector('input[name="conn-type"][value="endpoint"]').checked = true;
+  }
+  openModal('modal-external-agent');
+}
+
+async function externalSubmit() {
+  var name = document.getElementById('ext-name').value.trim();
+  var editing = document.getElementById('edit-agent-id').value;
+  var isModel = document.querySelector('input[name="conn-type"]:checked').value === 'model';
+
+  if (!name) { showToast('请输入名称', true); return; }
+
+  var params = new URLSearchParams();
+  params.set('name', name);
+
+  if (isModel) {
+    params.set('provider', document.getElementById('ext-provider').value);
+    params.set('base_url', document.getElementById('ext-base-url').value.trim());
+    params.set('model', document.getElementById('ext-model').value.trim());
+    params.set('api_key', document.getElementById('ext-api-key').value.trim());
+    if (!editing) {
+      params.set('agent_id', document.getElementById('ext-agent-id').value.trim());
+    }
+    if (!params.get('model')) { showToast('请输入模型名称', true); return; }
+    if (!params.get('base_url')) { showToast('请输入 Base URL', true); return; }
+  } else {
+    var endpoint = document.getElementById('ext-endpoint').value.trim();
+    if (!endpoint) { showToast('请输入 Endpoint URL', true); return; }
+    params.set('endpoint', endpoint);
+    params.set('auth_token', document.getElementById('ext-auth-token').value.trim());
+    if (!editing) {
+      params.set('agent_id', document.getElementById('ext-agent-id').value.trim());
+    }
+  }
+
+  var url;
+  if (editing) {
+    url = '/admin/api/external/' + encodeURIComponent(editing) + '/update?' + params.toString();
+  } else {
+    url = '/admin/api/external/create?' + params.toString();
+  }
+
+  var r = await apiFetch(url, { method: 'POST' });
+  if (r && r.ok !== false) {
+    showToast(editing ? '✅ 已更新 ' + name : '✅ 已添加 ' + name);
+    closeModal('modal-external-agent');
+    document.getElementById('ext-agent-id').disabled = false;
+    externalLoad();
+  } else {
+    showToast((r && r.error) || '操作失败', true);
+  }
+}
+
+async function externalDelete(agentId) {
+  if (!confirm('确定删除外部 Agent「' + agentId + '」吗？')) return;
+  var r = await apiFetch('/admin/api/external/' + encodeURIComponent(agentId) + '/delete', {method:'DELETE'});
+  if (r && r.ok !== false) {
+    showToast('已删除 ' + agentId);
+    externalLoad();
+  } else {
+    showToast((r && r.error) || '删除失败', true);
+  }
+}
+
+async function externalTestCall(agentId) {
+  showToast('⏳ 正在测试调用 ' + agentId + ' ...');
+  var r = await apiFetch('/admin/api/external/' + encodeURIComponent(agentId) + '/test-call', {method:'POST'});
+  var el = document.getElementById('test-result');
+  var title = document.getElementById('test-title');
+  var body = document.getElementById('test-body');
+  el.style.display = 'block';
+  if (r) {
+    if (r.ok) {
+      title.textContent = '✅ ' + agentId + ' 调用成功 (HTTP ' + r.status_code + ')';
+      body.textContent = r.body || '(无返回内容)';
+      showToast('测试调用成功');
+    } else {
+      title.textContent = '❌ ' + agentId + ' 调用失败';
+      body.textContent = r.error || '未知错误';
+      showToast('测试调用失败: ' + (r.error || '未知错误'), true);
+    }
+  } else {
+    title.textContent = '❌ 网络错误';
+    body.textContent = '无法连接到服务器';
+  }
+}
+
+function escHtml(s) {
+  if (!s && s !== 0) return '';
+  var d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', externalLoad);
+</script>
+{% endblock %}

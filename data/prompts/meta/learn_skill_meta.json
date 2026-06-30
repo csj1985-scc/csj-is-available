@@ -1,0 +1,15 @@
+{
+  "id": "learn_skill_meta",
+  "category": "meta",
+  "title": "从对话中学新提示词",
+  "tags": ["元能力", "学习", "提示词提炼"],
+  "applicable_to": ["悟道自身"],
+  "template": "悟道在和用户对话中识别有价值的提示词模式，自动提炼入库。\n\n识别条件（同时满足）：\n1. 用户明确表示满意（\"这个好\"\"就这样\"\"可以\"等）\n2. 该提示词被复用 ≥ 3 次\n3. confidence ≥ 0.7（用户评分或悟道自评）\n\n入库格式：\n{\n  \"id\": \"新id（分类_场景_序号）\",\n  \"category\": \"对应分类\",\n  \"title\": \"新场景标题\",\n  \"tags\": [\"...\"],\n  \"applicable_to\": [\"...\"],\n  \"template\": \"提取出来的模板（保留占位符 {var}）\",\n  \"variables\": [\"...\"],\n  \"source\": \"learned\",\n  \"learned_from\": \"会话日期/项目名\",\n  \"created_at\": \"YYYY-MM-DD\",\n  \"usage_count\": 0,\n  \"success_count\": 0,\n  \"confidence_avg\": 0.0,\n  \"version\": 1\n}\n\n不要把临时一次性提示词入库，避免库爆炸。",
+  "variables": [],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}

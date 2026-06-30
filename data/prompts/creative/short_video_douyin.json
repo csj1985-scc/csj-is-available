@@ -1,0 +1,15 @@
+{
+  "id": "short_video_douyin",
+  "category": "creative",
+  "title": "抖音短视频脚本",
+  "tags": ["短视频", "抖音", "脚本", "文案"],
+  "applicable_to": ["抖音", "视频号", "小红书视频"],
+  "template": "帮我写短视频脚本。\n\n平台：{platform}（抖音/视频号/小红书）\n时长：{duration}（15s/30s/60s）\n主题：{topic}\n目标：{goal}（涨粉/带货/涨知识/引流）\n\n要求：\n1. 钩子：前 3 秒必须抓眼球（提问/冲突/反差/数字）\n2. 中段：痛点/冲突/反转（按 {structure}：悬念/对比/故事/吐槽）\n3. 结尾：核心价值 + 行动号召（关注/评论/购买）\n4. 镜头建议：远/中/近/特写 + 运镜（推/拉/摇/移/固定）\n5. 字幕文案：口语化、不说教、断句适合配音\n6. BGM 建议（情绪 / 节奏 / 是否热门 BGM）\n7. 标签建议（3-5 个话题标签）",
+  "variables": ["platform", "duration", "topic", "goal", "structure"],
+  "source": "seed",
+  "created_at": "2026-06-16",
+  "usage_count": 0,
+  "success_count": 0,
+  "confidence_avg": 0.0,
+  "version": 1
+}
